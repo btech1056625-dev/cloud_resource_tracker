@@ -5,12 +5,16 @@ const API_BASE_URL = "http://13.237.72.150/cloud_resource_tracker/";
 // Get all resources
 // ----------------------------
 export async function getResources() {
-    try {
-        const response = await fetch(API_BASE_URL + "get_resources.php");
-        return await response.json();
-    } catch (error) {
-        console.error("Error fetching resources:", error);
-    }
+
+    const token = localStorage.getItem("idToken");
+
+    const response = await fetch(`${API_BASE_URL}get_resources.php`, {
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    return response.json();
 }
 
 // ----------------------------
