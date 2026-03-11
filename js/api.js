@@ -4,7 +4,7 @@ const API_BASE_URL = "http://13.237.72.150/cloud_resource_tracker/";
 // ----------------------------
 // Get all resources
 // ----------------------------
-export async function getResources() {
+async function getResources() {
 
     const token = localStorage.getItem("idToken");
 
