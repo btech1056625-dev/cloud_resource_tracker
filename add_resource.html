@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Resource | Cloud Resource Tracker</title>
-    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="/css/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
     <div class="sidebar">
         <div class="brand">
@@ -14,39 +16,52 @@
             CloudTracker
         </div>
         <ul class="nav-links">
-            <li class="nav-item"><a href="dashboard.html" class="nav-link"><i class="fas fa-chart-line"></i> Dashboard</a></li>
-            <li class="nav-item"><a href="view_resources.html" class="nav-link"><i class="fas fa-server"></i> Resources</a></li>
-            <li class="nav-item"><a href="add_resource.html" class="nav-link active"><i class="fas fa-plus-circle"></i> Add Resource</a></li>
-            <li class="nav-item"><a href="profile.html" class="nav-link"><i class="fas fa-user-cog"></i> Profile</a></li>
+            <li class="nav-item"><a href="dashboard.html" class="nav-link"><i class="fas fa-chart-line"></i>
+                    Dashboard</a></li>
+            <li class="nav-item"><a href="view_resources.html" class="nav-link"><i class="fas fa-server"></i>
+                    Resources</a></li>
+            <li class="nav-item"><a href="add_resource.html" class="nav-link active"><i class="fas fa-plus-circle"></i>
+                    Add Resource</a></li>
+            <li class="nav-item"><a href="profile.html" class="nav-link"><i class="fas fa-user-cog"></i> Profile</a>
+            </li>
         </ul>
         <div class="user-info" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
             <p style="font-size: 0.875rem; color: var(--text-secondary);">Logged in as</p>
             <p style="font-weight: 600;">admin@cloudtracker.io</p>
-            <a href="login.html" style="color: #f87171; text-decoration: none; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+            <a href="login.html"
+                style="color: #f87171; text-decoration: none; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </a>
         </div>
     </div>
 
     <main class="main-content">
-        <div style="position: absolute; width: 400px; height: 400px; background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%); top: 10%; right: 10%; z-index: -1; pointer-events: none;"></div>
-        <div style="position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%); bottom: 10%; left: 30%; z-index: -1; pointer-events: none;"></div>
+        <div
+            style="position: absolute; width: 400px; height: 400px; background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%); top: 10%; right: 10%; z-index: -1; pointer-events: none;">
+        </div>
+        <div
+            style="position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%); bottom: 10%; left: 30%; z-index: -1; pointer-events: none;">
+        </div>
 
         <header style="margin-bottom: 2rem; position: relative;">
-            <a href="view_resources.html" style="color: var(--text-secondary); text-decoration: none; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+            <a href="view_resources.html"
+                style="color: var(--text-secondary); text-decoration: none; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
                 <i class="fas fa-arrow-left"></i> Back to Resources
             </a>
             <h1>Provision New Resource</h1>
-            <p style="color: var(--text-secondary)">Specify the configuration and provider for your cloud infrastructure.</p>
+            <p style="color: var(--text-secondary)">Specify the configuration and provider for your cloud
+                infrastructure.</p>
         </header>
 
         <div class="card" style="max-width: 900px; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--gradient-1);"></div>
+            <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--gradient-1);">
+            </div>
             <form id="addResourceForm" style="padding: 1rem;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                     <div class="form-group">
                         <label for="resourceName">Resource Name</label>
-                        <input type="text" id="resourceName" name="resourceName" placeholder="e.g. My-App-Backend" required>
+                        <input type="text" id="resourceName" name="resourceName" placeholder="e.g. My-App-Backend"
+                            required>
                     </div>
                     <div class="form-group">
                         <label for="resourceType">Resource Type</label>
@@ -85,7 +100,8 @@
                 </div>
                 <div class="form-group">
                     <label for="description">Description (Optional)</label>
-                    <textarea id="description" name="description" rows="4" placeholder="Briefly describe the purpose of this resource..."></textarea>
+                    <textarea id="description" name="description" rows="4"
+                        placeholder="Briefly describe the purpose of this resource..."></textarea>
                 </div>
                 <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
                     <button type="button" class="btn" style="background: rgba(255,255,255,0.1);">Cancel</button>
@@ -95,6 +111,14 @@
         </div>
     </main>
 
-    <script src="js/app.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth();
+        handleAuth();
+    </script>
+
 </body>
+
 </html>
