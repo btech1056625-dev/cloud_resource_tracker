@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up | Cloud Resource Tracker</title>
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top left, #1e293b, #0a0e17);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .signup-card {
+            width: 100%;
+            max-width: 500px;
+            padding: 3rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="card signup-card">
+        <div class="brand" style="justify-content: center; margin-bottom: 2rem; font-size: 2rem;">
+            <i class="fas fa-cloud"></i> CloudTracker
+        </div>
+        <h2 style="text-align: center; margin-bottom: 0.5rem;">Create Account</h2>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">Join CloudTracker to monitor your assets</p>
+
+        <form action="login.html">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName" placeholder="John" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName" placeholder="Doe" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="john@example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Min. 8 characters" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Create Account</button>
+        </form>
+
+        <p style="text-align: center; margin-top: 2rem; font-size: 0.875rem; color: var(--text-secondary);">
+            Already have an account? <a href="login.html" style="color: var(--accent-blue); text-decoration: none; font-weight: 600;">Sign In</a>
+        </p>
+    </div>
+</body>
+</html>
