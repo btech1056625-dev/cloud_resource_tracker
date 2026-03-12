@@ -9,14 +9,17 @@ function login() {
     sessionStorage.setItem("nonce", nonce);
 
     const loginUrl =
-        `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}` +
-        `&response_type=token` +
+        `${COGNITO_DOMAIN}/oauth2/authorize?client_id=${CLIENT_ID}` +
+        `&response_type=id_token` +
         `&scope=email+openid+profile` +
         `&nonce=${nonce}` +
         `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
-    console.log("Redirecting to Cognito with nonce:", nonce);
-    window.location.href = loginUrl;
+    console.log("LOGIN ATTEMPT - Nonce:", nonce);
+    console.log("REDIRECT URL:", loginUrl);
+    
+    // Attempt redirect
+    window.location.assign(loginUrl);
 }
 
 function signup() {
@@ -24,15 +27,19 @@ function signup() {
     const nonce = generateNonce();
     sessionStorage.setItem("nonce", nonce);
 
+    // Cognito signup is usually just the authorize endpoint with an extra param or a specific UI
+    // Using the same /oauth2/authorize as /login but users can select signup there
     const signupUrl =
         `${COGNITO_DOMAIN}/signup?client_id=${CLIENT_ID}` +
-        `&response_type=token` +
+        `&response_type=id_token` +
         `&scope=email+openid+profile` +
         `&nonce=${nonce}` +
         `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
-    console.log("Redirecting to Cognito signup with nonce:", nonce);
-    window.location.href = signupUrl;
+    console.log("SIGNUP ATTEMPT - Nonce:", nonce);
+    console.log("REDIRECT URL:", signupUrl);
+    
+    window.location.assign(signupUrl);
 }
 
 function generateNonce() {
