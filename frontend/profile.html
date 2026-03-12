@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile | Cloud Resource Tracker</title>
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="brand">
+            <i class="fas fa-cloud"></i>
+            CloudTracker
+        </div>
+        <ul class="nav-links">
+            <li class="nav-item"><a href="/dashboard.html" class="nav-link"><i class="fas fa-chart-line"></i>
+                    Dashboard</a></li>
+            <li class="nav-item"><a href="/view_resources.html" class="nav-link"><i class="fas fa-server"></i>
+                    Resources</a></li>
+            <li class="nav-item"><a href="/add_resource.html" class="nav-link"><i class="fas fa-plus-circle"></i> Add
+                    Resource</a></li>
+            <li class="nav-item"><a href="/profile.html" class="nav-link active"><i class="fas fa-user-cog"></i>
+                    Profile</a></li>
+        </ul>
+        <div class="user-info" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+            <p style="font-size: 0.875rem; color: var(--text-secondary);">Logged in as</p>
+            <p id="user-email" style="font-weight: 600;">Authenticated User</p>
+            <a href="#" onclick="logout(); return false;"
+                style="color: #f87171; text-decoration: none; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <header style="margin-bottom: 2rem;">
+            <h1>Profile Settings</h1>
+            <p style="color: var(--text-secondary)">Manage your account information and preferences.</p>
+        </header>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+            <div class="card" style="text-align: center;">
+                <div
+                    style="width: 120px; height: 120px; border-radius: 50%; background: var(--gradient-1); margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; border: 4px solid var(--glass-border);">
+                    AD
+                </div>
+                <h3>Admin User</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Infrastructure Engineer</p>
+                <button class="btn"
+                    style="width: 100%; margin-bottom: 0.5rem; background: rgba(255,255,255,0.05);">Upload
+                    Photo</button>
+                <button class="btn"
+                    style="width: 100%; color: #f87171; background: transparent; border: 1px solid rgba(239, 68, 68, 0.2);">Delete
+                    Account</button>
+            </div>
+
+            <div class="card">
+                <h3>Personal Information</h3>
+                <form style="margin-top: 1.5rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" value="Admin" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" value="User" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" value="admin@cloudtracker.io" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Company</label>
+                        <input type="text" value="CloudTracker Corp">
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 2rem;">
+            <h3>Security Settings</h3>
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--glass-border);">
+                <div>
+                    <p style="font-weight: 600;">Two-Factor Authentication</p>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary);">Add an extra layer of security to your
+                        account.</p>
+                </div>
+                <button class="btn btn-primary">Enable</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0;">
+                <div>
+                    <p style="font-weight: 600;">Password</p>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary);">Last changed 3 months ago.</p>
+                </div>
+                <button class="btn" style="background: rgba(255,255,255,0.05);">Change Password</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        handleAuth();
+        setTimeout(() => {
+            requireAuth();
+            const token = getToken();
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split(".")[1]));
+                    const emailEl = document.getElementById("user-email");
+                    if (emailEl) {
+                        emailEl.textContent = payload.email || "Authenticated User";
+                    }
+                } catch (e) {
+                    console.error("Unable to parse token:", e);
+                }
+            }
+        }, 100);
+    </script>
+</body>
+
+</html>
