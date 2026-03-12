@@ -8,7 +8,7 @@ async function getResources() {
 
     const token = localStorage.getItem("idToken");
 
-    const response = await fetch(`${API_BASE_URL}get_resources.php`, {
+    const response = await fetch(`${API_BASE_URL}get_resource.php`, {
         headers: {
             "Authorization": `Bearer ${token}`
         }
@@ -63,7 +63,13 @@ async function getCostByService() {
 // ----------------------------
 async function getStatusSummary() {
     try {
-        const response = await fetch(API_BASE_URL + "get_status_summary.php");
+        const token = localStorage.getItem("idToken");
+        const response = await fetch(API_BASE_URL + "get_summary_status.php", {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
         return await response.json();
     } catch (error) {
         console.error("Error fetching status summary:", error);
