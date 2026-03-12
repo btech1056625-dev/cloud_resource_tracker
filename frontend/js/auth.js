@@ -8,18 +8,15 @@ function login() {
     const nonce = generateNonce();
     sessionStorage.setItem("nonce", nonce);
 
-    const loginUrl =
-        `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}` +
-        `&response_type=id_token` +
-        `&scope=email+openid+profile` +
-        `&nonce=${nonce}` +
-        `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+    const loginUrl = new URL(`${COGNITO_DOMAIN}/login`);
+    loginUrl.searchParams.set("client_id", CLIENT_ID);
+    loginUrl.searchParams.set("response_type", "id_token");
+    loginUrl.searchParams.set("scope", "email openid profile");
+    loginUrl.searchParams.set("nonce", nonce);
+    loginUrl.searchParams.set("redirect_uri", REDIRECT_URI);
 
-    console.log("LOGIN ATTEMPT - Nonce:", nonce);
-    console.log("REDIRECT URL:", loginUrl);
-    
-    // Attempt redirect
-    window.location.assign(loginUrl);
+    console.log("LOGIN REDIRECT:", loginUrl.toString());
+    window.location.assign(loginUrl.toString());
 }
 
 function signup() {
@@ -27,19 +24,15 @@ function signup() {
     const nonce = generateNonce();
     sessionStorage.setItem("nonce", nonce);
 
-    // Cognito signup is usually just the authorize endpoint with an extra param or a specific UI
-    // Using the same /oauth2/authorize as /login but users can select signup there
-    const signupUrl =
-        `${COGNITO_DOMAIN}/signup?client_id=${CLIENT_ID}` +
-        `&response_type=id_token` +
-        `&scope=email+openid+profile` +
-        `&nonce=${nonce}` +
-        `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+    const signupUrl = new URL(`${COGNITO_DOMAIN}/signup`);
+    signupUrl.searchParams.set("client_id", CLIENT_ID);
+    signupUrl.searchParams.set("response_type", "id_token");
+    signupUrl.searchParams.set("scope", "email openid profile");
+    signupUrl.searchParams.set("nonce", nonce);
+    signupUrl.searchParams.set("redirect_uri", REDIRECT_URI);
 
-    console.log("SIGNUP ATTEMPT - Nonce:", nonce);
-    console.log("REDIRECT URL:", signupUrl);
-    
-    window.location.assign(signupUrl);
+    console.log("SIGNUP REDIRECT:", signupUrl.toString());
+    window.location.assign(signupUrl.toString());
 }
 
 function generateNonce() {
@@ -47,22 +40,14 @@ function generateNonce() {
 }
 
 function handleAuth() {
-    console.log("handleAuth page:", window.location.href);
-    console.log("handleAuth hash:", window.location.hash);
-    console.log("handleAuth search:", window.location.search);
+    console.log("handleAuth URL:", window.location.href);
 
-    // Try to extract token from hash
-    const hash = window.location.hash;
-    let idToken = null;
-
-    if (hash) {
-        // Remove the leading '#' and split by '&'
-        const hashParams = hash.substring(1);
-        console.log("Hash params:", hashParams);
-
-        // Parse the hash parameters
-        const params = new URLSearchParams(hashParams);
-        idToken = params.get("id_token");
+    // Check both hash and search (sometimes Cognito behaves differently)
+    const hash = window.location.hash.substring(1);
+    const search = window.location.search.substring(1);
+    
+    const params = new URLSearchParams(hash || search);
+    let idToken = params.get("id_token");
         const state = params.get("state");
 
         console.log("Extracted id_token:", idToken ? "Token found" : "No token found");
