@@ -1,5 +1,5 @@
 // Base URL of your backend (EC2 or local server)
-const API_BASE_URL = "https://13.237.72.150/cloud_resource_tracker/";
+const API_BASE_URL = "https://cloud-resource-tracker.duckdns.org/cloud_resource_tracker/";
 
 // ----------------------------
 // Get all resources
