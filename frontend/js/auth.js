@@ -10,7 +10,7 @@ function login() {
 
     const loginUrl =
         `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}` +
-        `&response_type=id_token` +
+        `&response_type=token` +
         `&scope=email+openid+profile` +
         `&nonce=${nonce}` +
         `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
@@ -26,7 +26,7 @@ function signup() {
 
     const signupUrl =
         `${COGNITO_DOMAIN}/signup?client_id=${CLIENT_ID}` +
-        `&response_type=id_token` +
+        `&response_type=token` +
         `&scope=email+openid+profile` +
         `&nonce=${nonce}` +
         `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
