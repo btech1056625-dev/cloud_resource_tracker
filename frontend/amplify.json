@@ -1,0 +1,16 @@
+{
+  "redirects": [
+    {
+      "source": "/<^[^.]+$|.(?!css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|php)$>/",
+      "target": "/:splat.html",
+      "status": 200,
+      "condition": null
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/<^(?!.*\\.html$|.*\\.php$)[^.]+$>/",
+      "target": "/:splat.html"
+    }
+  ]
+}
