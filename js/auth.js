@@ -4,62 +4,64 @@ const CLIENT_ID = "132pgtcdjm1eiaq26m426cfbo1";
 const REDIRECT_URI = "https://master.d83hzis7nnfol.amplifyapp.com/dashboard.html";
 const LOGOUT_URI = "https://master.d83hzis7nnfol.amplifyapp.com/index.html";
 
-
-// ===== Login =====
+// Login
 function login() {
-    const loginUrl = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=token&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+    const loginUrl =
+        `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}` +
+        `&response_type=token` +
+        `&scope=email+openid+profile` +
+        `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+
     window.location.href = loginUrl;
 }
 
-
-// ===== Signup =====
+// Signup
 function signup() {
-    const signupUrl = `${COGNITO_DOMAIN}/signup?client_id=${CLIENT_ID}&response_type=token&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+    const signupUrl =
+        `${COGNITO_DOMAIN}/signup?client_id=${CLIENT_ID}` +
+        `&response_type=token` +
+        `&scope=email+openid+profile` +
+        `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+
     window.location.href = signupUrl;
 }
 
-
-// ===== Handle Token After Login =====
+// Handle Cognito token after redirect
 function handleAuth() {
-
     const hash = window.location.hash;
 
-    if (hash.includes("id_token")) {
-
+    if (hash && hash.includes("id_token")) {
         const params = new URLSearchParams(hash.substring(1));
-
         const idToken = params.get("id_token");
 
-        localStorage.setItem("idToken", idToken);
-
-        window.location.href = "/dashboard.html";
+        if (idToken) {
+            localStorage.setItem("idToken", idToken);
+            window.history.replaceState({}, document.title, "/dashboard.html");
+        }
     }
 }
 
-
-// ===== Get Token =====
+// Get token
 function getToken() {
     return localStorage.getItem("idToken");
 }
 
-
-// ===== Logout =====
+// Logout
 function logout() {
-
     localStorage.removeItem("idToken");
 
-    const logoutUrl = `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(LOGOUT_URI)}`;
+    const logoutUrl =
+        `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}` +
+        `&logout_uri=${encodeURIComponent(LOGOUT_URI)}`;
 
     window.location.href = logoutUrl;
 }
 
-
-// ===== Protect Pages =====
+// Protect private pages
 function requireAuth() {
-
     const token = localStorage.getItem("idToken");
 
     if (!token) {
-        window.location.href = "index.html";
+        window.location.href = "/index.html";
     }
 }
