@@ -4,19 +4,18 @@ const CLIENT_ID = "6s2hctvj6iovhn8i34hahohsmh";
 const REDIRECT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/index.html";
 const LOGOUT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/index.html";
 
-// NOTE: This Cognito domain uses the NEW Cognito Managed Login.
-// The new managed login ONLY supports the /oauth2/authorize endpoint.
-// The old /login and /signup paths do NOT exist in this version.
+// NOTE: New Cognito Managed Login only supports response_type=code (Authorization Code flow).
+// Implicit flow (id_token) is deprecated and not supported.
 
 function login() {
-    const nonce = generateNonce();
-    sessionStorage.setItem("nonce", nonce);
+    const state = generateNonce(); // Use state as CSRF protection
+    sessionStorage.setItem("oauth_state", state);
 
     const url = new URL(`${COGNITO_DOMAIN}/oauth2/authorize`);
     url.searchParams.set("client_id", CLIENT_ID);
-    url.searchParams.set("response_type", "id_token");
-    url.searchParams.set("scope", "email openid profile");
-    url.searchParams.set("nonce", nonce);
+    url.searchParams.set("response_type", "code");
+    url.searchParams.set("scope", "openid email profile");
+    url.searchParams.set("state", state);
     url.searchParams.set("redirect_uri", REDIRECT_URI);
 
     console.log("LOGIN REDIRECT:", url.toString());
@@ -24,15 +23,14 @@ function login() {
 }
 
 function signup() {
-    const nonce = generateNonce();
-    sessionStorage.setItem("nonce", nonce);
+    const state = generateNonce();
+    sessionStorage.setItem("oauth_state", state);
 
-    // New Cognito Managed Login: signup is the same endpoint with screen_hint=signup
     const url = new URL(`${COGNITO_DOMAIN}/oauth2/authorize`);
     url.searchParams.set("client_id", CLIENT_ID);
-    url.searchParams.set("response_type", "id_token");
-    url.searchParams.set("scope", "email openid profile");
-    url.searchParams.set("nonce", nonce);
+    url.searchParams.set("response_type", "code");
+    url.searchParams.set("scope", "openid email profile");
+    url.searchParams.set("state", state);
     url.searchParams.set("redirect_uri", REDIRECT_URI);
     url.searchParams.set("screen_hint", "signup");
 
@@ -44,52 +42,75 @@ function generateNonce() {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
-function handleAuth() {
+// Exchange the authorization code for tokens via /oauth2/token
+async function exchangeCodeForTokens(code) {
+    const body = new URLSearchParams();
+    body.set("grant_type", "authorization_code");
+    body.set("client_id", CLIENT_ID);
+    body.set("code", code);
+    body.set("redirect_uri", REDIRECT_URI);
+
+    try {
+        const response = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString()
+        });
+
+        const data = await response.json();
+        console.log("Token response:", data);
+
+        if (data.id_token) {
+            localStorage.setItem("idToken", data.id_token);
+            if (data.access_token) localStorage.setItem("accessToken", data.access_token);
+            if (data.refresh_token) localStorage.setItem("refreshToken", data.refresh_token);
+            console.log("✓ Tokens stored successfully.");
+            return true;
+        } else {
+            console.error("Token exchange failed:", data);
+            return false;
+        }
+    } catch (err) {
+        console.error("Token exchange error:", err);
+        return false;
+    }
+}
+
+async function handleAuth() {
     console.log("handleAuth URL:", window.location.href);
 
-    // Check both hash and search (Cognito may return tokens in either location)
-    const hash = window.location.hash.substring(1);
-    const search = window.location.search.substring(1);
-
-    const params = new URLSearchParams(hash || search);
-    const idToken = params.get("id_token");
+    // Check query params for ?code= returned by Authorization Code flow
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
     const state = params.get("state");
+    const error = params.get("error");
 
-    console.log("id_token found:", !!idToken);
-    console.log("state:", state);
+    if (error) {
+        console.error("OAuth error:", error, params.get("error_description"));
+        return;
+    }
 
-    if (idToken) {
-        if (!idToken.includes(".")) {
-            console.error("Invalid token format");
+    if (code) {
+        console.log("Auth code received, exchanging for tokens...");
+
+        // Validate state to prevent CSRF
+        const storedState = sessionStorage.getItem("oauth_state");
+        if (storedState && state !== storedState) {
+            console.error("State mismatch! Possible CSRF attack.");
             return;
         }
 
-        try {
-            const payload = JSON.parse(atob(idToken.split(".")[1]));
-            const storedNonce = sessionStorage.getItem("nonce");
+        sessionStorage.removeItem("oauth_state");
 
-            console.log("Token nonce:", payload.nonce);
-            console.log("Stored nonce:", storedNonce);
+        // Clean URL
+        window.history.replaceState({}, document.title, "/index.html");
 
-            if (storedNonce && payload.nonce !== storedNonce) {
-                console.error("Nonce mismatch - possible CSRF attack");
-                return;
-            }
-
-            localStorage.setItem("idToken", idToken);
-            console.log("✓ Token stored. Expires:", new Date(payload.exp * 1000).toLocaleString());
-
-            sessionStorage.removeItem("nonce");
-            window.history.replaceState({}, document.title, "/index.html");
-
-            setTimeout(() => {
-                window.location.href = "/dashboard.html";
-            }, 100);
-        } catch (e) {
-            console.error("Error parsing token:", e);
+        const success = await exchangeCodeForTokens(code);
+        if (success) {
+            setTimeout(() => { window.location.href = "/dashboard.html"; }, 100);
         }
     } else {
-        console.log("No id_token found in URL");
+        console.log("No auth code in URL.");
     }
 }
 
@@ -99,6 +120,9 @@ function getToken() {
 
 function logout() {
     localStorage.removeItem("idToken");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("oauth_state");
 
     const url = new URL(`${COGNITO_DOMAIN}/logout`);
     url.searchParams.set("client_id", CLIENT_ID);
