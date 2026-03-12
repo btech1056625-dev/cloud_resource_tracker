@@ -1,9 +1,8 @@
 // ===== Cognito Configuration =====
-const COGNITO_DOMAIN = "https://ap-southeast-2-zmuftlajo.auth.ap-southeast-2.amazoncognito.com";
-const CLIENT_ID = "132pgtcdjm1eiaq26m426cfbo1";
+const COGNITO_DOMAIN = "https://ap-southeast-2os7g4ap3m.auth.ap-southeast-2.amazoncognito.com";
+const CLIENT_ID = "6s2hctvj6iovhn8i34hahohsmh";
 const REDIRECT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/index.html";
 const LOGOUT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/index.html";
-
 function login() {
     // Generate nonce for security
     const nonce = generateNonce();
