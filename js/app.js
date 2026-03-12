@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize Charts if on Dashboard
     const ctx = document.getElementById('costChart');
     if (ctx) {
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         ticks: {
                             color: '#94a3b8',
                             font: { size: 12 },
-                            callback: function(value) { return '$' + value; }
+                            callback: function (value) { return '$' + value; }
                         }
                     },
                     x: {
@@ -73,12 +73,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form Submissions (Mock)
     const addResourceForm = document.getElementById('addResourceForm');
     if (addResourceForm) {
-        addResourceForm.addEventListener('submit', function(e) {
+        addResourceForm.addEventListener('submit', function (e) {
             e.preventDefault();
             const formData = new FormData(addResourceForm);
             console.log('Resource Added:', Object.fromEntries(formData));
             alert('Resource Added Successfully (Mock)!');
-            window.location.href = 'view_resources.html';
+            window.location.href = '/view_resources.html';
         });
     }
 });
