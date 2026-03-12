@@ -20,7 +20,7 @@ async function getResources() {
 // ----------------------------
 // Add a new resource
 // ----------------------------
-export async function addResource(resourceData) {
+async function addResource(resourceData) {
     try {
         const response = await fetch(API_BASE_URL + "add_resource.php", {
             method: "POST",
@@ -39,7 +39,7 @@ export async function addResource(resourceData) {
 // ----------------------------
 // Get cost by service
 // ----------------------------
-export async function getCostByService() {
+async function getCostByService() {
     try {
         const response = await fetch(API_BASE_URL + "get_cost_by_service.php");
         return await response.json();
@@ -51,7 +51,7 @@ export async function getCostByService() {
 // ----------------------------
 // Get resource status summary
 // ----------------------------
-export async function getStatusSummary() {
+async function getStatusSummary() {
     try {
         const response = await fetch(API_BASE_URL + "get_status_summary.php");
         return await response.json();
@@ -63,7 +63,7 @@ export async function getStatusSummary() {
 // ----------------------------
 // Delete resource
 // ----------------------------
-export async function deleteResource(resourceId) {
+async function deleteResource(resourceId) {
     try {
         const response = await fetch(API_BASE_URL + "delete_resource.php", {
             method: "POST",
