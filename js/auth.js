@@ -4,7 +4,6 @@ const CLIENT_ID = "132pgtcdjm1eiaq26m426cfbo1";
 const REDIRECT_URI = "https://master.d83hzis7nnfol.amplifyapp.com/dashboard.html";
 const LOGOUT_URI = "https://master.d83hzis7nnfol.amplifyapp.com/index.html";
 
-// Login
 function login() {
     const loginUrl =
         `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}` +
@@ -15,7 +14,6 @@ function login() {
     window.location.href = loginUrl;
 }
 
-// Signup
 function signup() {
     const signupUrl =
         `${COGNITO_DOMAIN}/signup?client_id=${CLIENT_ID}` +
@@ -26,7 +24,6 @@ function signup() {
     window.location.href = signupUrl;
 }
 
-// Handle Cognito token after redirect
 function handleAuth() {
     const hash = window.location.hash;
 
@@ -36,17 +33,17 @@ function handleAuth() {
 
         if (idToken) {
             localStorage.setItem("idToken", idToken);
+
+            // remove token from URL without re-triggering auth loop
             window.history.replaceState({}, document.title, "/dashboard.html");
         }
     }
 }
 
-// Get token
 function getToken() {
     return localStorage.getItem("idToken");
 }
 
-// Logout
 function logout() {
     localStorage.removeItem("idToken");
 
@@ -57,7 +54,6 @@ function logout() {
     window.location.href = logoutUrl;
 }
 
-// Protect private pages
 function requireAuth() {
     const token = localStorage.getItem("idToken");
 
