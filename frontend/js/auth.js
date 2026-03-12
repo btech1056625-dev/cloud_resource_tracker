@@ -30,7 +30,7 @@ function signup() {
     // Cognito signup is usually just the authorize endpoint with an extra param or a specific UI
     // Using the same /oauth2/authorize as /login but users can select signup there
     const signupUrl =
-        `${COGNITO_DOMAIN}/signup?client_id=${CLIENT_ID}` +
+        `${COGNITO_DOMAIN}/oauth2/signup?client_id=${CLIENT_ID}` +
         `&response_type=id_token` +
         `&scope=email+openid+profile` +
         `&nonce=${nonce}` +
