@@ -32,7 +32,7 @@ function handleAuth() {
 
         localStorage.setItem("idToken", idToken);
 
-        window.location.href = "dashboard.html";
+        window.location.href = "/dashboard.html";
     }
 }
 
