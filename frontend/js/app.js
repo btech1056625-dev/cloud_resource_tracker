@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', function () {
         loadDashboardData();
     }
 
+    // Initialize Resources Table if on Resources page
+    const resourcesTable = document.querySelector('table tbody');
+    if (window.location.pathname.includes('view_resources.html')) {
+        loadResourcesTable();
+    }
+
     // Handle Active Nav Link
     const currentPath = window.location.pathname.split('/').pop();
     const navLinks = document.querySelectorAll('.nav-link');
@@ -16,15 +22,26 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Form Submissions (Mock)
+    // Form Submissions
     const addResourceForm = document.getElementById('addResourceForm');
     if (addResourceForm) {
-        addResourceForm.addEventListener('submit', function (e) {
+        addResourceForm.addEventListener('submit', async function (e) {
             e.preventDefault();
             const formData = new FormData(addResourceForm);
-            console.log('Resource Added:', Object.fromEntries(formData));
-            alert('Resource Added Successfully (Mock)!');
-            window.location.href = '/view_resources.html';
+            const resourceData = {
+                resource_name: formData.get('resourceName'),
+                service_type: formData.get('resourceType'),
+                provider: formData.get('provider'),
+                monthly_cost: parseFloat(formData.get('cost'))
+            };
+
+            const result = await addResource(resourceData);
+            if (result && result.success) {
+                alert('Resource Added Successfully!');
+                window.location.href = '/view_resources.html';
+            } else {
+                alert('Failed to add resource: ' + (result?.message || 'Unknown error'));
+            }
         });
     }
 });
@@ -169,5 +186,62 @@ async function loadDashboardData() {
         
     } catch (error) {
         console.error('Error loading dashboard data:', error);
+    }
+}
+async function loadResourcesTable() {
+    try {
+        const resourcesTable = document.querySelector('table tbody');
+        if (!resourcesTable) return;
+
+        // Show loading state
+        resourcesTable.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">Loading resources...</td></tr>';
+
+        const data = await getResources();
+        
+        if (data.success && Array.isArray(data.data)) {
+            resourcesTable.innerHTML = '';
+            
+            if (data.data.length === 0) {
+                resourcesTable.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No resources found.</td></tr>';
+                return;
+            }
+
+            data.data.forEach(resource => {
+                const tr = document.createElement('tr');
+                
+                const statusClass = 
+                    resource.status.toLowerCase() === 'active' || resource.status.toLowerCase() === 'running' ? 'status-active' : 
+                    resource.status.toLowerCase() === 'pending' ? 'status-pending' : 'status-terminated';
+
+                tr.innerHTML = `
+                    <td><strong>${resource.resource_name}</strong></td>
+                    <td>${resource.service_type}</td>
+                    <td>${resource.provider || 'AWS'}</td>
+                    <td>$${parseFloat(resource.monthly_cost || 0).toFixed(2)}</td>
+                    <td><span class="status-badge ${statusClass}">${resource.status}</span></td>
+                    <td>
+                        <button class="btn" style="padding: 0.3rem 0.6rem; background: rgba(255,255,255,0.05);"><i class="fas fa-edit"></i></button>
+                        <button class="btn" onclick="handleDelete('${resource.resource_id}')" style="padding: 0.3rem 0.6rem; background: rgba(255,255,255,0.05); color: #f87171;"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                resourcesTable.appendChild(tr);
+            });
+        } else {
+            resourcesTable.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #f87171;">Failed to load resources.</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading resources table:', error);
+    }
+}
+
+async function handleDelete(resourceId) {
+    if (confirm('Are you sure you want to delete this resource?')) {
+        const result = await deleteResource(resourceId);
+        if (result && result.success) {
+            alert('Resource deleted successfully!');
+            loadResourcesTable();
+        } else {
+            alert('Failed to delete resource: ' + (result?.message || 'Unknown error'));
+        }
     }
 }
