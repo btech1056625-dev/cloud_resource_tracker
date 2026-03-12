@@ -3,36 +3,41 @@ const COGNITO_DOMAIN = "https://ap-southeast-2os7g4ap3m.auth.ap-southeast-2.amaz
 const CLIENT_ID = "6s2hctvj6iovhn8i34hahohsmh";
 const REDIRECT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/index.html";
 const LOGOUT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/index.html";
+
+// NOTE: This Cognito domain uses the NEW Cognito Managed Login.
+// The new managed login ONLY supports the /oauth2/authorize endpoint.
+// The old /login and /signup paths do NOT exist in this version.
+
 function login() {
-    // Generate nonce for security
     const nonce = generateNonce();
     sessionStorage.setItem("nonce", nonce);
 
-    const loginUrl = new URL(`${COGNITO_DOMAIN}/login`);
-    loginUrl.searchParams.set("client_id", CLIENT_ID);
-    loginUrl.searchParams.set("response_type", "id_token");
-    loginUrl.searchParams.set("scope", "email openid profile");
-    loginUrl.searchParams.set("nonce", nonce);
-    loginUrl.searchParams.set("redirect_uri", REDIRECT_URI);
+    const url = new URL(`${COGNITO_DOMAIN}/oauth2/authorize`);
+    url.searchParams.set("client_id", CLIENT_ID);
+    url.searchParams.set("response_type", "id_token");
+    url.searchParams.set("scope", "email openid profile");
+    url.searchParams.set("nonce", nonce);
+    url.searchParams.set("redirect_uri", REDIRECT_URI);
 
-    console.log("LOGIN REDIRECT:", loginUrl.toString());
-    window.location.assign(loginUrl.toString());
+    console.log("LOGIN REDIRECT:", url.toString());
+    window.location.assign(url.toString());
 }
 
 function signup() {
-    // Generate nonce for security
     const nonce = generateNonce();
     sessionStorage.setItem("nonce", nonce);
 
-    const signupUrl = new URL(`${COGNITO_DOMAIN}/signup`);
-    signupUrl.searchParams.set("client_id", CLIENT_ID);
-    signupUrl.searchParams.set("response_type", "id_token");
-    signupUrl.searchParams.set("scope", "email openid profile");
-    signupUrl.searchParams.set("nonce", nonce);
-    signupUrl.searchParams.set("redirect_uri", REDIRECT_URI);
+    // New Cognito Managed Login: signup is the same endpoint with screen_hint=signup
+    const url = new URL(`${COGNITO_DOMAIN}/oauth2/authorize`);
+    url.searchParams.set("client_id", CLIENT_ID);
+    url.searchParams.set("response_type", "id_token");
+    url.searchParams.set("scope", "email openid profile");
+    url.searchParams.set("nonce", nonce);
+    url.searchParams.set("redirect_uri", REDIRECT_URI);
+    url.searchParams.set("screen_hint", "signup");
 
-    console.log("SIGNUP REDIRECT:", signupUrl.toString());
-    window.location.assign(signupUrl.toString());
+    console.log("SIGNUP REDIRECT:", url.toString());
+    window.location.assign(url.toString());
 }
 
 function generateNonce() {
@@ -42,89 +47,72 @@ function generateNonce() {
 function handleAuth() {
     console.log("handleAuth URL:", window.location.href);
 
-    // Check both hash and search (sometimes Cognito behaves differently)
+    // Check both hash and search (Cognito may return tokens in either location)
     const hash = window.location.hash.substring(1);
     const search = window.location.search.substring(1);
-    
+
     const params = new URLSearchParams(hash || search);
-    let idToken = params.get("id_token");
-        const state = params.get("state");
+    const idToken = params.get("id_token");
+    const state = params.get("state");
 
-        console.log("Extracted id_token:", idToken ? "Token found" : "No token found");
-        console.log("State:", state);
+    console.log("id_token found:", !!idToken);
+    console.log("state:", state);
 
-        if (idToken) {
-            // Validate token format (JWT has 3 parts separated by dots)
-            if (!idToken.includes(".")) {
-                console.error("Invalid token format: Missing dots in JWT");
-                return;
-            }
-
-            try {
-                // Verify nonce
-                const payload = JSON.parse(atob(idToken.split(".")[1]));
-                const storedNonce = sessionStorage.getItem("nonce");
-
-                console.log("Token payload nonce:", payload.nonce);
-                console.log("Stored nonce:", storedNonce);
-
-                if (storedNonce && payload.nonce !== storedNonce) {
-                    console.error("Nonce mismatch - possible attack");
-                    return;
-                }
-
-                localStorage.setItem("idToken", idToken);
-                console.log("✓ Token stored successfully in localStorage");
-                console.log("Token expires at:", new Date(payload.exp * 1000).toLocaleString());
-
-                // Clean up
-                sessionStorage.removeItem("nonce");
-
-                // Clean up the URL without reloading
-                window.history.replaceState({}, document.title, "/index.html");
-
-                // Redirect to dashboard after short delay
-                setTimeout(() => {
-                    window.location.href = "/dashboard.html";
-                }, 100);
-                return;
-            } catch (e) {
-                console.error("Error validating token:", e);
-                return;
-            }
+    if (idToken) {
+        if (!idToken.includes(".")) {
+            console.error("Invalid token format");
+            return;
         }
-    }
 
-    console.log("No id_token found in URL hash");
+        try {
+            const payload = JSON.parse(atob(idToken.split(".")[1]));
+            const storedNonce = sessionStorage.getItem("nonce");
+
+            console.log("Token nonce:", payload.nonce);
+            console.log("Stored nonce:", storedNonce);
+
+            if (storedNonce && payload.nonce !== storedNonce) {
+                console.error("Nonce mismatch - possible CSRF attack");
+                return;
+            }
+
+            localStorage.setItem("idToken", idToken);
+            console.log("✓ Token stored. Expires:", new Date(payload.exp * 1000).toLocaleString());
+
+            sessionStorage.removeItem("nonce");
+            window.history.replaceState({}, document.title, "/index.html");
+
+            setTimeout(() => {
+                window.location.href = "/dashboard.html";
+            }, 100);
+        } catch (e) {
+            console.error("Error parsing token:", e);
+        }
+    } else {
+        console.log("No id_token found in URL");
+    }
 }
 
 function getToken() {
-    const token = localStorage.getItem("idToken");
-    console.log("getToken called - Token exists:", !!token);
-    return token;
+    return localStorage.getItem("idToken");
 }
 
 function logout() {
-    console.log("Logging out...");
     localStorage.removeItem("idToken");
 
-    const logoutUrl =
-        `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}` +
-        `&logout_uri=${encodeURIComponent(LOGOUT_URI)}`;
+    const url = new URL(`${COGNITO_DOMAIN}/logout`);
+    url.searchParams.set("client_id", CLIENT_ID);
+    url.searchParams.set("logout_uri", LOGOUT_URI);
 
-    console.log("Redirecting to Cognito logout:", logoutUrl);
-    window.location.href = logoutUrl;
+    console.log("LOGOUT REDIRECT:", url.toString());
+    window.location.href = url.toString();
 }
 
 function requireAuth() {
     const token = localStorage.getItem("idToken");
-    console.log("requireAuth called - Token found:", !!token);
-
     if (!token) {
-        console.log("No token found, redirecting to login page");
+        console.log("Not authenticated, redirecting to login");
         window.location.href = "/index.html";
-    } else {
-        console.log("User is authenticated");
     }
 }
 
