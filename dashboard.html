@@ -138,17 +138,22 @@
     <script src="/js/app.js"></script>
     <script>
         handleAuth();
-        requireAuth();
+        setTimeout(() => {
+            requireAuth();
 
-        const token = getToken();
-        if (token) {
-            try {
-                const payload = JSON.parse(atob(token.split(".")[1]));
-                document.getElementById("user-email").textContent = payload.email || "Authenticated User";
-            } catch (e) {
-                console.error("Unable to parse token:", e);
+            const token = getToken();
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split(".")[1]));
+                    const emailEl = document.getElementById("user-email");
+                    if (emailEl) {
+                        emailEl.textContent = payload.email || "Authenticated User";
+                    }
+                } catch (e) {
+                    console.error("Unable to parse token:", e);
+                }
             }
-        }
+        }, 100);
     </script>
 </body>
 
