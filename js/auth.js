@@ -11,6 +11,7 @@ function login() {
         `&scope=email+openid+profile` +
         `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
+    console.log("Redirecting to Cognito:", loginUrl);
     window.location.href = loginUrl;
 }
 
@@ -21,10 +22,15 @@ function signup() {
         `&scope=email+openid+profile` +
         `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
+    console.log("Redirecting to Cognito signup:", signupUrl);
     window.location.href = signupUrl;
 }
 
 function handleAuth() {
+    console.log("handleAuth page:", window.location.href);
+    console.log("handleAuth hash:", window.location.hash);
+    console.log("handleAuth search:", window.location.search);
+
     const hash = window.location.hash;
 
     if (hash && hash.includes("id_token")) {
@@ -33,11 +39,13 @@ function handleAuth() {
 
         if (idToken) {
             localStorage.setItem("idToken", idToken);
-
-            // remove token from URL without re-triggering auth loop
+            console.log("Token stored successfully");
             window.history.replaceState({}, document.title, "/dashboard.html");
+            return;
         }
     }
+
+    console.log("No id_token found in URL");
 }
 
 function getToken() {
@@ -56,6 +64,7 @@ function logout() {
 
 function requireAuth() {
     const token = localStorage.getItem("idToken");
+    console.log("requireAuth token:", token);
 
     if (!token) {
         window.location.href = "/index.html";
