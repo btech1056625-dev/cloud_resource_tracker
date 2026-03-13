@@ -44,12 +44,12 @@
 
         <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
             <div class="card" style="text-align: center;">
-                <div
+                <div id="user-avatar"
                     style="width: 120px; height: 120px; border-radius: 50%; background: var(--gradient-1); margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; border: 4px solid var(--glass-border);">
-                    AD
+                    ??
                 </div>
-                <h3>Admin User</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Infrastructure Engineer</p>
+                <h3 id="display-name">Loading...</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Cloud Architect</p>
                 <button class="btn"
                     style="width: 100%; margin-bottom: 0.5rem; background: rgba(255,255,255,0.05);">Upload
                     Photo</button>
@@ -60,20 +60,20 @@
 
             <div class="card">
                 <h3>Personal Information</h3>
-                <form style="margin-top: 1.5rem;">
+                <form id="profile-form" style="margin-top: 1.5rem;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form-group">
-                            <label>First Name</label>
-                            <input type="text" value="Admin" readonly>
+                            <label>Full Name</label>
+                            <input type="text" id="full-name-input" value="Loading..." readonly>
                         </div>
                         <div class="form-group">
-                            <label>Last Name</label>
-                            <input type="text" value="User" readonly>
+                            <label>Username</label>
+                            <input type="text" id="username-input" value="Loading..." readonly>
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Email Address</label>
-                        <input type="email" value="admin@cloudtracker.io" readonly>
+                        <input type="email" id="email-input" value="Loading..." readonly>
                     </div>
                     <div class="form-group">
                         <label>Company</label>
@@ -100,7 +100,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0;">
                 <div>
                     <p style="font-weight: 600;">Password</p>
-                    <p style="font-size: 0.875rem; color: var(--text-secondary);">Last changed 3 months ago.</p>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary);">Managed via AWS Cognito.</p>
                 </div>
                 <button class="btn" style="background: rgba(255,255,255,0.05);">Change Password</button>
             </div>
@@ -118,10 +118,25 @@
             if (token) {
                 try {
                     const payload = JSON.parse(atob(token.split(".")[1]));
+                    console.log("Profile Payload:", payload);
+                    
+                    const email = payload.email || "User";
+                    const name = payload.name || payload.given_name || email.split('@')[0];
+                    const username = payload['cognito:username'] || "user_" + payload.sub.substring(0, 5);
+
+                    // Update sidebar
                     const emailEl = document.getElementById("user-email");
-                    if (emailEl) {
-                        emailEl.textContent = payload.email || "Authenticated User";
-                    }
+                    if (emailEl) emailEl.textContent = email;
+
+                    // Update Profile Card
+                    document.getElementById("display-name").textContent = name;
+                    document.getElementById("user-avatar").textContent = name.substring(0, 2).toUpperCase();
+
+                    // Update Form
+                    document.getElementById("full-name-input").value = name;
+                    document.getElementById("username-input").value = username;
+                    document.getElementById("email-input").value = email;
+
                 } catch (e) {
                     console.error("Unable to parse token:", e);
                 }

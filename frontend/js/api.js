@@ -81,7 +81,7 @@ async function getStatusSummary() {
 // ----------------------------
 async function deleteResource(resourceId) {
     try {
-        const token = localStorage.getItem("idToken");
+        const token = localStorage.getItem("id_token");
         const response = await fetch(API_BASE_URL + "delete_resource.php", {
             method: "POST",
             headers: {
