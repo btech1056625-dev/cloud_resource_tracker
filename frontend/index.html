@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login | Cloud Resource Tracker</title>
+    <title>Welcome | Cloud Resource Tracker</title>
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <link rel="stylesheet" href="/css/index.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -14,13 +14,46 @@
             align-items: center;
             justify-content: center;
             background: radial-gradient(circle at top right, #1e293b, #0a0e17);
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
         }
 
         .login-card {
             width: 100%;
-            max-width: 400px;
-            padding: 3rem;
+            max-width: 450px;
+            padding: 4rem;
+            text-align: center;
             animation: fadeIn 0.8s ease-out;
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .hero-icon {
+            font-size: 4rem;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
+            display: inline-block;
+        }
+
+        .btn-large {
+            padding: 1.25rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 16px;
+            margin-top: 2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-large:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.4);
         }
 
         @keyframes fadeIn {
@@ -28,7 +61,6 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -38,62 +70,42 @@
 </head>
 
 <body>
-    <div class="card login-card">
-        <div class="brand" style="justify-content: center; margin-bottom: 2rem; font-size: 2rem;">
-            <i class="fas fa-cloud"></i> CloudTracker
+    <div class="login-card">
+        <div class="hero-icon">
+            <i class="fas fa-cloud"></i>
         </div>
 
-        <h2 style="text-align: center; margin-bottom: 0.5rem;">Welcome Back</h2>
-        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
-            Log in to manage your resources
+        <h1 style="font-size: 2.5rem; margin-bottom: 1rem; font-weight: 800; letter-spacing: -1px;">CloudTracker</h1>
+        <p style="color: var(--text-secondary); font-size: 1.1rem; line-height: 1.6; margin-bottom: 2.5rem;">
+            Professional multi-cloud resource monitoring and cost analysis platform.
         </p>
 
-        <form onsubmit="event.preventDefault(); login(); return false;">
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" placeholder="admin@example.com" required />
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="••••••••" required />
-            </div>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0; cursor: pointer;">
-                    <input type="checkbox" style="width: auto;" />
-                    <span style="font-size: 0.75rem;">Remember me</span>
-                </label>
-
-                <a href="#" style="font-size: 0.75rem; color: var(--accent-blue); text-decoration: none;">
-                    Forgot Password?
-                </a>
-            </div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%;">
-                Sign In
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <button onclick="login()" class="btn btn-primary btn-large">
+                <i class="fas fa-sign-in-alt" style="margin-right: 0.5rem;"></i> Get Started
             </button>
-        </form>
+            <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 1rem;">
+                Powered by AWS Cognito Identity
+            </p>
+        </div>
 
-        <p style="text-align: center; margin-top: 2rem; font-size: 0.875rem; color: var(--text-secondary);">
-            Don't have an account?
-            <a href="javascript:void(0)" onclick="signup(); return false;" style="color: var(--accent-blue); text-decoration: none; font-weight: 600;">
-                Sign Up
-            </a>
-        </p>
+        <div style="margin-top: 3rem; display: flex; justify-content: center; gap: 2rem; font-size: 0.75rem; color: var(--text-dark);">
+            <span><i class="fas fa-shield-alt"></i> Secure</span>
+            <span><i class="fas fa-bolt"></i> Real-time</span>
+            <span><i class="fas fa-chart-pie"></i> Visualized</span>
+        </div>
     </div>
 
     <script src="/js/auth.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/app.js"></script>
     <script>
-        // Check if user already logged in
+        // Directly handle return from Cognito
+        handleAuth();
+        
+        // If already logged in, skip landing page
         if (isAuthenticated()) {
-            console.log("User already authenticated, redirecting to dashboard");
             window.location.href = "/dashboard.html";
-        } else {
-            // Handle Cognito redirect
-            handleAuth();
         }
     </script>
 </body>
