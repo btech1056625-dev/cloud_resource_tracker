@@ -18,6 +18,7 @@ if (!isset($current_user_id)) {
 }
 
 try {
+    // We select specific columns. If the database schema is outdated, this will throw an error.
     $stmt = $pdo->prepare("
         SELECT resource_id, resource_name, service_type, provider, monthly_cost, status, created_at 
         FROM resources 
@@ -37,7 +38,8 @@ catch (Exception $e) {
     http_response_code(500);
     echo json_encode([
         "success" => false,
-        "error" => "Failed to fetch resources"
+        "error" => "Failed to fetch resources",
+        "details" => $e->getMessage()
     ]);
 }   
 ?>
