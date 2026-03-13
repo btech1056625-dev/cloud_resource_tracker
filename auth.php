@@ -19,11 +19,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $region = 'ap-southeast-2';
 $userPoolId = 'ap-southeast-2_OS7G4AP3m'; // UPDATED POOL ID
 
-$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+$authHeader = '';
+if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+    $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+} elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+    $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+} elseif (function_exists('apache_request_headers')) {
+    $headers = apache_request_headers();
+    if (isset($headers['Authorization'])) {
+        $authHeader = $headers['Authorization'];
+    }
+}
 
 if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
     http_response_code(401);
-    echo json_encode(['error' => 'Unauthorized: No token provided']);
+    echo json_encode([
+        'error' => 'Unauthorized: No token provided',
+        'debug_server' => array_keys($_SERVER) // Helps debug if header is missing
+    ]);
     exit;
 }
 
