@@ -58,3 +58,9 @@ A professional-grade, multi-cloud resource monitoring and cost analysis platform
 ## 📄 License
 
 This project is open-source and available under the MIT License.
+
+## ✍️ Author
+
+**Bhavya Varshney**
+BIT Mesra | CSE | 1ST YEAR | 2025-2026  
+[GitHub Profile](https://github.com/btech1056625-dev)
