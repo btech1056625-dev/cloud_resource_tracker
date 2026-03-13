@@ -77,7 +77,8 @@ try {
 
     echo json_encode([
         "error" => "Unauthorized",
-        "message" => $e->getMessage()
+        "message" => $e->getMessage(),
+        "debug_token_prefix" => isset($jwt) ? substr($jwt, 0, 10) : 'none'
     ]);
 
     exit;

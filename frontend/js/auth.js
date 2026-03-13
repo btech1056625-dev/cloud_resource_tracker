@@ -61,9 +61,9 @@ async function exchangeCodeForTokens(code) {
         console.log("Token response:", data);
 
         if (data.id_token) {
-            localStorage.setItem("idToken", data.id_token);
-            if (data.access_token) localStorage.setItem("accessToken", data.access_token);
-            if (data.refresh_token) localStorage.setItem("refreshToken", data.refresh_token);
+            localStorage.setItem("id_token", data.id_token);
+            if (data.access_token) localStorage.setItem("access_token", data.access_token);
+            if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
             console.log("✓ Tokens stored successfully.");
             return true;
         } else {
@@ -115,13 +115,13 @@ async function handleAuth() {
 }
 
 function getToken() {
-    return localStorage.getItem("idToken");
+    return localStorage.getItem("id_token");
 }
 
 function logout() {
-    localStorage.removeItem("idToken");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("id_token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
     sessionStorage.removeItem("oauth_state");
 
     const url = new URL(`${COGNITO_DOMAIN}/logout`);
@@ -133,7 +133,7 @@ function logout() {
 }
 
 function requireAuth() {
-    const token = localStorage.getItem("idToken");
+    const token = localStorage.getItem("id_token");
     if (!token) {
         console.log("Not authenticated, redirecting to login");
         window.location.href = "/index.html";
@@ -141,5 +141,5 @@ function requireAuth() {
 }
 
 function isAuthenticated() {
-    return !!localStorage.getItem("idToken");
+    return !!localStorage.getItem("id_token");
 }
