@@ -61,7 +61,7 @@ async function loadDashboardData() {
         // Update dashboard cards
         if (summary.success) {
             document.getElementById('totalResources').textContent = summary.totalResources || 0;
-            document.getElementById('monthlySpend').textContent = '$' + (summary.totalCost || 0).toFixed(2);
+            document.getElementById('monthlySpend').textContent = '$' + parseFloat(summary.totalCost || 0).toFixed(2);
             document.getElementById('activeInstances').textContent = summary.activeResources || 0;
             document.getElementById('criticalAlerts').textContent = summary.criticalAlerts || 0;
             
@@ -86,7 +86,7 @@ async function loadDashboardData() {
         const ctx = document.getElementById('costChart');
         if (ctx && costData.success && costData.data) {
             const labels = costData.data.map(item => item.service);
-            const amounts = costData.data.map(item => parseFloat(item.amount));
+            const amounts = costData.data.map(item => parseFloat(item.amount || 0));
             
             new Chart(ctx, {
                 type: 'line',
