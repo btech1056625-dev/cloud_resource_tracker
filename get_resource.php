@@ -18,9 +18,19 @@ if (!isset($current_user_id)) {
 }
 
 try {
-    // We select specific columns. If the database schema is outdated, this will throw an error.
+    // Mapping DB columns to Frontend keys
+    // service_name -> resource_name
+    // instance_type -> service_type
+    // region -> provider
     $stmt = $pdo->prepare("
-        SELECT resource_id, resource_name, service_type, provider, monthly_cost, status, created_at 
+        SELECT 
+            resource_id, 
+            service_name AS resource_name, 
+            instance_type AS service_type, 
+            region AS provider, 
+            monthly_cost, 
+            status, 
+            created_at 
         FROM resources 
         WHERE user_id = ? 
         ORDER BY created_at DESC
