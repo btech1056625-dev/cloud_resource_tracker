@@ -1,15 +1,15 @@
 {
-  "rewrites": [
-    {
-      "source": "/<^[^.]+$|.(?!css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|php|html)$>/",
-      "target": "/index.html"
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/index.html",
-      "target": "/index.html",
-      "status": 200
-    }
-  ]
+	"rewrites": [
+		{
+			"source": "/<^[^.]+$|.(?!css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|php|html)$>/",
+			"target": "/index.html"
+		}
+	],
+	"redirects": [
+		{
+			"source": "/index.html",
+			"target": "/index.html",
+			"status": 200
+		}
+	]
 }
