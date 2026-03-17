@@ -18,20 +18,24 @@ const LOGOUT_URI = getRedirectUri();
 function login() {
     // Generate nonce and state for security
     const nonce = generateNonce();
-    const state = generateNonce(); // Using same generator for state
+    const state = generateNonce();
     sessionStorage.setItem("nonce", nonce);
     sessionStorage.setItem("state", state);
 
     const redirectUri = getRedirectUri();
+    const scope = "openid email profile";
+    
     const loginUrl =
-        `${COGNITO_DOMAIN}/oauth2/authorize?client_id=${CLIENT_ID}` +
-        `&response_type=id_token` +
-        `&scope=email+openid+profile` +
-        `&nonce=${nonce}` +
-        `&state=${state}` +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}`;
+        `${COGNITO_DOMAIN}/oauth2/authorize?` +
+        `client_id=${encodeURIComponent(CLIENT_ID)}&` +
+        `response_type=id_token&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `nonce=${encodeURIComponent(nonce)}&` +
+        `state=${encodeURIComponent(state)}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}`;
 
-    console.log("Redirecting to Cognito via /oauth2/authorize with nonce:", nonce);
+    console.log("Redirecting to Cognito via /oauth2/authorize");
+    console.log("Full login URL:", loginUrl);
     window.location.href = loginUrl;
 }
 
@@ -43,15 +47,19 @@ function signup() {
     sessionStorage.setItem("state", state);
 
     const redirectUri = getRedirectUri();
+    const scope = "openid email profile";
+    
     const signupUrl =
-        `${COGNITO_DOMAIN}/signup?client_id=${CLIENT_ID}` +
-        `&response_type=id_token` +
-        `&scope=email+openid+profile` +
-        `&nonce=${nonce}` +
-        `&state=${state}` +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}`;
+        `${COGNITO_DOMAIN}/signup?` +
+        `client_id=${encodeURIComponent(CLIENT_ID)}&` +
+        `response_type=id_token&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `nonce=${encodeURIComponent(nonce)}&` +
+        `state=${encodeURIComponent(state)}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}`;
 
-    console.log("Redirecting to Cognito signup with nonce:", nonce);
+    console.log("Redirecting to Cognito signup");
+    console.log("Full signup URL:", signupUrl);
     window.location.href = signupUrl;
 }
 
