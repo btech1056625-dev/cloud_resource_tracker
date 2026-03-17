@@ -6,6 +6,7 @@
     --glass-border: rgba(255, 255, 255, 0.1);
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
+    --text-dark: #64748b;
     --accent-blue: #3b82f6;
     --accent-indigo: #6366f1;
     --accent-purple: #a855f7;
@@ -238,4 +239,148 @@ td {
 .chart-container {
     margin-top: 2rem;
     height: 400px;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Mobile Devices (< 768px) */
+@media (max-width: 767px) {
+    body {
+        font-size: 14px;
+    }
+
+    .login-card {
+        max-width: 90%;
+        padding: 2rem 1.5rem;
+        margin: 1rem;
+    }
+
+    .hero-icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+    }
+
+    h1 {
+        font-size: 2rem !important;
+    }
+
+    .btn-large {
+        padding: 1rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        transition: left 0.3s ease;
+        z-index: 1001;
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 1rem;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .card {
+        padding: 1rem;
+    }
+
+    .table-container {
+        margin-top: 1rem;
+        font-size: 0.75rem;
+    }
+
+    th, td {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .nav-link {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .chart-container {
+        height: 300px;
+    }
+}
+
+/* Tablet Devices (768px - 1024px) */
+@media (max-width: 1024px) and (min-width: 768px) {
+    .login-card {
+        max-width: 500px;
+        padding: 3rem;
+    }
+
+    .main-content {
+        margin-left: 240px;
+        padding: 1.5rem 2rem;
+    }
+
+    .sidebar {
+        width: 240px;
+        padding: 1.5rem 1rem;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .chart-container {
+        height: 350px;
+    }
+}
+
+/* Large Screens (1025px+) */
+@media (min-width: 1025px) {
+    .main-content {
+        margin-left: 260px;
+        padding: 2rem 3rem;
+    }
+
+    .sidebar {
+        width: 260px;
+    }
+}
+
+/* Ultra-wide Screens (1440px+) */
+@media (min-width: 1440px) {
+    .login-card {
+        max-width: 500px;
+    }
+
+    .main-content {
+        padding: 2rem 4rem;
+    }
+}
+
+/* High DPI Screens (Retina Displays) */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .sidebar, .nav-link {
+        display: none;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    body {
+        background: white;
+        color: black;
+    }
 }

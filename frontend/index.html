@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Welcome | Cloud Resource Tracker</title>
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-    <link rel="stylesheet" href="/css/index.css" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://d3sdmrdkgkaitg.cloudfront.net https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' https://d3sdmrdkgkaitg.cloudfront.net https://dkifvm4b8a1j4.cloudfront.net https://cdnjs.cloudflare.com; connect-src 'self' https://ap-southeast-2zmuftlajo.auth.ap-southeast-2.amazoncognito.com https://cloud-resource-tracker.duckdns.org https://cognito-idp.ap-southeast-2.amazonaws.com; img-src 'self' https://d19nijclqkl93.cloudfront.net data:; font-src 'self' https: data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; script-src-attr 'none'; upgrade-insecure-requests;">
+    <link rel="stylesheet" href="css/index.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
         body {
@@ -89,24 +90,32 @@
             </p>
         </div>
 
-        <div style="margin-top: 3rem; display: flex; justify-content: center; gap: 2rem; font-size: 0.75rem; color: var(--text-dark);">
+        <div style="margin-top: 3rem; display: flex; justify-content: center; gap: 2rem; font-size: 0.75rem; color: var(--text-secondary);">
             <span><i class="fas fa-shield-alt"></i> Secure</span>
             <span><i class="fas fa-bolt"></i> Real-time</span>
             <span><i class="fas fa-chart-pie"></i> Visualized</span>
         </div>
     </div>
 
-    <script src="/js/auth.js"></script>
-    <script src="/js/api.js"></script>
-    <script src="/js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
     <script>
-        // Directly handle return from Cognito
-        handleAuth();
-        
-        // If already logged in, skip landing page
-        if (isAuthenticated()) {
-            window.location.href = "/dashboard.html";
-        }
+        // Auto-invoke authentication handler when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if returning from Cognito with token in URL hash
+            if (window.location.hash) {
+                console.log("Cognito callback detected, processing authentication...");
+                handleAuth();
+            } else {
+                // If already logged in, redirect to dashboard
+                const token = localStorage.getItem("idToken");
+                if (token) {
+                    console.log("User already authenticated, redirecting to dashboard...");
+                    window.location.href = "/dashboard.html";
+                }
+            }
+        });
     </script>
 </body>
 
