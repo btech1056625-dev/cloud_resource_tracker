@@ -8,8 +8,9 @@ const USER_POOL_ID = "ap-southeast-2_ZMufTlAjo";
 // Dynamically determine redirect URI based on current environment
 const getRedirectUri = () => {
     const origin = window.location.origin;
-    // Handle both local development (e.g. 127.0.0.1:5501) and production
-    return `${origin}/index.html`;
+    // For Amplify hosting, use the origin path directly (e.g., https://frontend.d1v2anpquopal6.amplifyapp.com/)
+    // Cognito callback URL must match exactly what's registered in the app client settings
+    return origin.endsWith('/') ? origin : `${origin}/`;
 };
 
 const LOGOUT_URI = getRedirectUri();
