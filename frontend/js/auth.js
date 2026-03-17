@@ -14,12 +14,12 @@ const getRedirectUri = () => {
 };
 
 function login() {
-    // Use Cognito via OAuth2 /authorize endpoint
+    // Use Cognito OAuth2 /authorize endpoint with implicit grant (id_token response)
     const redirectUri = getRedirectUri();
     const loginUrl = 
         `${COGNITO_DOMAIN}/oauth2/authorize?` +
         `client_id=${CLIENT_ID}&` +
-        `response_type=code&` +
+        `response_type=id_token&` +
         `scope=openid+email+profile&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}`;
     
@@ -29,12 +29,12 @@ function login() {
 }
 
 function signup() {
-    // Use Cognito via OAuth2 /authorize endpoint (same as login, Cognito handles signup)
+    // Use Cognito via OAuth2 /authorize endpoint with implicit grant
     const redirectUri = getRedirectUri();
     const signupUrl = 
         `${COGNITO_DOMAIN}/oauth2/authorize?` +
         `client_id=${CLIENT_ID}&` +
-        `response_type=code&` +
+        `response_type=id_token&` +
         `scope=openid+email+profile&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}`;
     
@@ -45,49 +45,62 @@ function signup() {
 function handleAuth() {
     console.log("=== handleAuth function invoked ===");
     console.log("Current URL:", window.location.href);
-    console.log("Search params:", window.location.search);
+    console.log("Hash:", window.location.hash);
+    console.log("Search:", window.location.search);
 
-    // Check for authorization code in URL parameters (from Cognito hosted UI)
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
-    const error = urlParams.get("error");
-    const errorDescription = urlParams.get("error_description");
+    // Check for id_token in URL hash (from Cognito implicit grant)
+    const hash = window.location.hash;
+    
+    if (hash) {
+        // Remove the leading '#' and parse hash parameters
+        const hashParams = hash.substring(1);
+        const params = new URLSearchParams(hashParams);
+        
+        const idToken = params.get("id_token");
+        const error = params.get("error");
+        const errorDescription = params.get("error_description");
 
-    // Handle Cognito error responses
-    if (error) {
-        console.error("❌ Cognito authorization error:", error);
-        console.error("Error description:", errorDescription);
-        alert(`Login failed: ${error} - ${errorDescription}`);
-        window.history.replaceState({}, document.title, "/index.html");
-        return;
+        // Handle Cognito error responses
+        if (error) {
+            console.error("❌ Cognito authorization error:", error);
+            console.error("Error description:", errorDescription);
+            alert(`Login failed: ${error} - ${errorDescription}`);
+            window.history.replaceState({}, document.title, "/index.html");
+            return;
+        }
+
+        if (idToken) {
+            console.log("✅ ID token received from Cognito");
+            
+            // Store the token
+            localStorage.setItem("idToken", idToken);
+            
+            // Try to decode and extract email from token
+            try {
+                const tokenParts = idToken.split(".");
+                if (tokenParts.length === 3) {
+                    const payload = JSON.parse(atob(tokenParts[1]));
+                    localStorage.setItem("userEmail", payload.email || "user@example.com");
+                }
+            } catch (e) {
+                console.log("Could not decode token payload:", e);
+                localStorage.setItem("userEmail", "user@example.com");
+            }
+            
+            // Clean up URL without reloading
+            window.history.replaceState({}, document.title, "/index.html");
+            
+            // Redirect to dashboard
+            console.log("✅ Authentication successful! Redirecting to dashboard...");
+            alert("Login successful!");
+            setTimeout(() => {
+                window.location.href = "/dashboard.html";
+            }, 500);
+            return;
+        }
     }
 
-    if (code) {
-        console.log("✅ Authorization code received from Cognito");
-        console.log("Code:", code.substring(0, 20) + "...");
-        
-        // Save the code for backend exchange
-        sessionStorage.setItem("authCode", code);
-        
-        // In a real app, you would exchange this code on your backend for tokens
-        // For now, set a mock token to allow testing
-        const mockToken = "mock_id_token_" + Math.random().toString(36).substring(7);
-        localStorage.setItem("idToken", mockToken);
-        localStorage.setItem("userEmail", "user@example.com");
-        
-        // Clean up URL without reloading
-        window.history.replaceState({}, document.title, "/index.html");
-        
-        // Redirect to dashboard
-        console.log("✅ Authentication successful! Redirecting to dashboard...");
-        alert("Login successful!");
-        setTimeout(() => {
-            window.location.href = "/dashboard.html";
-        }, 500);
-        return;
-    }
-
-    console.log("ℹ️  No authorization code found in URL");
+    console.log("ℹ️  No ID token found in URL hash");
 }
 
 function getToken() {
