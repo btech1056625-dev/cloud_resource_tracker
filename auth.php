@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 $region = 'ap-southeast-2';
-$userPoolId = 'ap-southeast-2_OS7G4AP3m'; // UPDATED POOL ID
+$userPoolId = 'ap-southeast-2_ZMufTlAjo'; 
 
 $authHeader = '';
 if (isset($_SERVER['HTTP_AUTHORIZATION'])) {

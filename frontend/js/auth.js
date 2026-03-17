@@ -1,5 +1,5 @@
 // ===== Cognito Configuration =====
-const COGNITO_DOMAIN = "https://ap-southeast-2zmuftlajo.auth.ap-southeast-2.amazoncognito.com";
+const COGNITO_DOMAIN = "https://zmuftlajo.auth.ap-southeast-2.amazoncognito.com";
 const CLIENT_ID = "6tkb0i2gbosk9j00f4ue3rq5ca";
 const REDIRECT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/";
 const LOGOUT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/";
