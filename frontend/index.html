@@ -82,7 +82,7 @@
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <button onclick="login()" class="btn btn-primary btn-large">
+            <button id="loginBtn" class="btn btn-primary btn-large">
                 <i class="fas fa-sign-in-alt" style="margin-right: 0.5rem;"></i> Get Started
             </button>
             <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 1rem;">
@@ -103,6 +103,14 @@
     <script>
         // Auto-invoke authentication handler when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            // Attach login button click handler to avoid inline onclick CSP violations
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function() {
+                    login();
+                });
+            }
+            
             // Check if returning from Cognito with token in URL hash
             if (window.location.hash) {
                 console.log("Cognito callback detected, processing authentication...");
