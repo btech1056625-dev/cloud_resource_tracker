@@ -1,8 +1,8 @@
 // ===== Cognito Configuration =====
 const COGNITO_DOMAIN = "https://ap-southeast-2zmuftlajo.auth.ap-southeast-2.amazoncognito.com";
 const CLIENT_ID = "6tkb0i2gbosk9j00f4ue3rq5ca";
-const REDIRECT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/";
-const LOGOUT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/";
+const REDIRECT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/index.html";
+const LOGOUT_URI = "https://frontend.d1v2anpquopal6.amplifyapp.com/index.html";
 
 function login() {
     // Generate nonce for security
@@ -10,13 +10,13 @@ function login() {
     sessionStorage.setItem("nonce", nonce);
 
     const loginUrl =
-        `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}` +
+        `${COGNITO_DOMAIN}/oauth2/authorize?client_id=${CLIENT_ID}` +
         `&response_type=id_token` +
         `&scope=email+openid+profile` +
         `&nonce=${nonce}` +
         `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
-    console.log("Redirecting to Cognito with nonce:", nonce);
+    console.log("Redirecting to Cognito via /oauth2/authorize with nonce:", nonce);
     window.location.href = loginUrl;
 }
 
