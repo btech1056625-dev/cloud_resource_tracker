@@ -17,7 +17,7 @@ const getRedirectUri = () => {
 // Required by AWS Cognito for implicit grant flow with id_token response type
 const generateNonce = () => {
     const length = 32;
-    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let nonce = '';
     for (let i = 0; i < length; i++) {
         nonce += charset.charAt(Math.floor(Math.random() * charset.length));
@@ -25,13 +25,27 @@ const generateNonce = () => {
     return nonce;
 };
 
+// Generate random state parameter for CSRF protection
+// Required by AWS Cognito for OAuth2 security
+const generateState = () => {
+    const length = 32;
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let state = '';
+    for (let i = 0; i < length; i++) {
+        state += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return state;
+};
+
 function login() {
     // Use Cognito OAuth2 /authorize endpoint with implicit grant (id_token response)
     const redirectUri = getRedirectUri();
     const nonce = generateNonce();
+    const state = generateState();
     
-    // Store nonce in sessionStorage for verification when token is returned
+    // Store nonce and state in sessionStorage for verification when token is returned
     sessionStorage.setItem("oauth_nonce", nonce);
+    sessionStorage.setItem("oauth_state", state);
     
     const loginUrl = 
         `${COGNITO_DOMAIN}/oauth2/authorize?` +
@@ -39,24 +53,30 @@ function login() {
         `response_type=id_token&` +
         `scope=openid+email+profile&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `nonce=${encodeURIComponent(nonce)}`;
+        `nonce=${encodeURIComponent(nonce)}&` +
+        `state=${encodeURIComponent(state)}&` +
+        `response_mode=fragment`;
     
     console.log("Redirecting to Cognito OAuth2 Authorize endpoint");
     console.log("Login URL:", loginUrl);
     window.location.href = loginUrl;
 }
 
-function signup() {
-    // Use Cognito via OAuth2 /authorize endpoint with implicit grant
-    const redirectUri = getRedirectUri();
-    const nonce = generateNonce();
+funcconst state = generateState();
     
-    // Store nonce in sessionStorage for verification when token is returned
+    // Store nonce and state in sessionStorage for verification when token is returned
     sessionStorage.setItem("oauth_nonce", nonce);
+    sessionStorage.setItem("oauth_state", state);
     
     const signupUrl = 
         `${COGNITO_DOMAIN}/oauth2/authorize?` +
         `client_id=${CLIENT_ID}&` +
+        `response_type=id_token&` +
+        `scope=openid+email+profile&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `nonce=${encodeURIComponent(nonce)}&` +
+        `state=${encodeURIComponent(state)}&` +
+        `response_mode=fragment
         `response_type=id_token&` +
         `scope=openid+email+profile&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
