@@ -6,7 +6,7 @@ const API_BASE_URL = "https://cloud-resource-tracker.duckdns.org/cloud_resource_
 // ----------------------------
 async function getResources() {
 
-    const token = localStorage.getItem("id_token");
+    const token = localStorage.getItem("idToken");
 
     const response = await fetch(`${API_BASE_URL}get_resource.php`, {
         headers: {
@@ -22,7 +22,7 @@ async function getResources() {
 // ----------------------------
 async function addResource(resourceData) {
     try {
-        const token = localStorage.getItem("id_token");
+        const token = localStorage.getItem("idToken");
         const response = await fetch(API_BASE_URL + "add_resource.php", {
             method: "POST",
             headers: {
@@ -44,7 +44,7 @@ async function addResource(resourceData) {
 // ----------------------------
 async function getCostByService() {
     try {
-        const token = localStorage.getItem("id_token");
+        const token = localStorage.getItem("idToken");
         const response = await fetch(API_BASE_URL + "get_cost_by_service.php", {
             method: "GET",
             headers: {
@@ -63,7 +63,7 @@ async function getCostByService() {
 // ----------------------------
 async function getStatusSummary() {
     try {
-        const token = localStorage.getItem("id_token");
+        const token = localStorage.getItem("idToken");
         const response = await fetch(API_BASE_URL + "get_summary_status.php", {
             method: "GET",
             headers: {
@@ -81,7 +81,7 @@ async function getStatusSummary() {
 // ----------------------------
 async function deleteResource(resourceId) {
     try {
-        const token = localStorage.getItem("id_token");
+        const token = localStorage.getItem("idToken");
         const response = await fetch(API_BASE_URL + "delete_resource.php", {
             method: "POST",
             headers: {
