@@ -29,6 +29,7 @@ function login() {
         `${COGNITO_DOMAIN}/oauth2/authorize?` +
         `client_id=${encodeURIComponent(CLIENT_ID)}&` +
         `response_type=id_token&` +
+        `response_mode=fragment&` +
         `scope=${encodeURIComponent(scope)}&` +
         `nonce=${encodeURIComponent(nonce)}&` +
         `state=${encodeURIComponent(state)}&` +
@@ -53,6 +54,7 @@ function signup() {
         `${COGNITO_DOMAIN}/signup?` +
         `client_id=${encodeURIComponent(CLIENT_ID)}&` +
         `response_type=id_token&` +
+        `response_mode=fragment&` +
         `scope=${encodeURIComponent(scope)}&` +
         `nonce=${encodeURIComponent(nonce)}&` +
         `state=${encodeURIComponent(state)}&` +
