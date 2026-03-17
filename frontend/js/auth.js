@@ -13,15 +13,33 @@ const getRedirectUri = () => {
     return `${origin}/index.html`;
 };
 
+// Generate random nonce for OAuth2 security (prevents token replay attacks)
+// Required by AWS Cognito for implicit grant flow with id_token response type
+const generateNonce = () => {
+    const length = 32;
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    let nonce = '';
+    for (let i = 0; i < length; i++) {
+        nonce += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return nonce;
+};
+
 function login() {
     // Use Cognito OAuth2 /authorize endpoint with implicit grant (id_token response)
     const redirectUri = getRedirectUri();
+    const nonce = generateNonce();
+    
+    // Store nonce in sessionStorage for verification when token is returned
+    sessionStorage.setItem("oauth_nonce", nonce);
+    
     const loginUrl = 
         `${COGNITO_DOMAIN}/oauth2/authorize?` +
         `client_id=${CLIENT_ID}&` +
         `response_type=id_token&` +
         `scope=openid+email+profile&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}`;
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `nonce=${encodeURIComponent(nonce)}`;
     
     console.log("Redirecting to Cognito OAuth2 Authorize endpoint");
     console.log("Login URL:", loginUrl);
@@ -31,12 +49,18 @@ function login() {
 function signup() {
     // Use Cognito via OAuth2 /authorize endpoint with implicit grant
     const redirectUri = getRedirectUri();
+    const nonce = generateNonce();
+    
+    // Store nonce in sessionStorage for verification when token is returned
+    sessionStorage.setItem("oauth_nonce", nonce);
+    
     const signupUrl = 
         `${COGNITO_DOMAIN}/oauth2/authorize?` +
         `client_id=${CLIENT_ID}&` +
         `response_type=id_token&` +
         `scope=openid+email+profile&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}`;
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `nonce=${encodeURIComponent(nonce)}`;
     
     console.log("Redirecting to Cognito OAuth2 Authorize endpoint (signup)");
     window.location.href = signupUrl;
