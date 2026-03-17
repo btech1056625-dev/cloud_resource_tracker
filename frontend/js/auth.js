@@ -62,9 +62,11 @@ function login() {
     window.location.href = loginUrl;
 }
 
-funcconst state = generateState();
+function signup() {
+    const redirectUri = getRedirectUri();
+    const nonce = generateNonce();
+    const state = generateState();
     
-    // Store nonce and state in sessionStorage for verification when token is returned
     sessionStorage.setItem("oauth_nonce", nonce);
     sessionStorage.setItem("oauth_state", state);
     
@@ -76,11 +78,7 @@ funcconst state = generateState();
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `nonce=${encodeURIComponent(nonce)}&` +
         `state=${encodeURIComponent(state)}&` +
-        `response_mode=fragment
-        `response_type=id_token&` +
-        `scope=openid+email+profile&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `nonce=${encodeURIComponent(nonce)}`;
+        `response_mode=fragment`;
     
     console.log("Redirecting to Cognito OAuth2 Authorize endpoint (signup)");
     window.location.href = signupUrl;
