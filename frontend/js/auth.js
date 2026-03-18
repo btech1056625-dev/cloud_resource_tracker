@@ -114,31 +114,79 @@ function handleAuth() {
         if (idToken) {
             console.log("✅ ID token received from Cognito");
             
-            // Store the token
-            localStorage.setItem("idToken", idToken);
-            
-            // Try to decode and extract email from token
+            // Decode and validate token
             try {
                 const tokenParts = idToken.split(".");
-                if (tokenParts.length === 3) {
-                    const payload = JSON.parse(atob(tokenParts[1]));
-                    localStorage.setItem("userEmail", payload.email || "user@example.com");
+                if (tokenParts.length !== 3) {
+                    throw new Error("Invalid token format (must have 3 parts)");
                 }
+                
+                const payload = JSON.parse(atob(tokenParts[1]));
+                
+                // Log token claims for debugging
+                console.log("Token payload:", {
+                    email: payload.email,
+                    nonce: payload.nonce,
+                    aud: payload.aud,
+                    iss: payload.iss,
+                    exp: new Date(payload.exp * 1000).toLocaleString()
+                });
+                
+                // SECURITY: Validate token expiration
+                if (payload.exp * 1000 < Date.now()) {
+                    console.error("❌ Token has expired");
+                    alert("Token has expired. Please log in again.");
+                    window.history.replaceState({}, document.title, "/index.html");
+                    return;
+                }
+                
+                // SECURITY: Validate nonce (CSRF protection)
+                const storedNonce = sessionStorage.getItem("oauth_nonce");
+                if (!storedNonce || payload.nonce !== storedNonce) {
+                    console.error("❌ Nonce mismatch - possible attack");
+                    console.error("Expected nonce:", storedNonce);
+                    console.error("Token nonce:", payload.nonce);
+                    alert("Security validation failed: Nonce mismatch. Please log in again.");
+                    window.history.replaceState({}, document.title, "/index.html");
+                    sessionStorage.removeItem("oauth_nonce");
+                    sessionStorage.removeItem("oauth_state");
+                    return;
+                }
+                
+                // SECURITY: Validate audience (client_id)
+                if (payload.aud !== CLIENT_ID) {
+                    console.error("❌ Audience mismatch");
+                    alert("Security validation failed: Invalid audience. Please log in again.");
+                    window.history.replaceState({}, document.title, "/index.html");
+                    return;
+                }
+                
+                // Store the token and user data
+                localStorage.setItem("idToken", idToken);
+                localStorage.setItem("userEmail", payload.email || "user@example.com");
+                localStorage.setItem("tokenExpiry", payload.exp * 1000);
+                
+                // Clean up session storage
+                sessionStorage.removeItem("oauth_nonce");
+                sessionStorage.removeItem("oauth_state");
+                
+                // Clean up URL without reloading
+                window.history.replaceState({}, document.title, "/index.html");
+                
+                // Redirect to dashboard
+                console.log("✅ Authentication successful! Redirecting to dashboard...");
+                alert("Login successful!");
+                setTimeout(() => {
+                    window.location.href = "/dashboard.html";
+                }, 500);
+                return;
+                
             } catch (e) {
-                console.log("Could not decode token payload:", e);
-                localStorage.setItem("userEmail", "user@example.com");
+                console.error("❌ Error processing token:", e);
+                alert("Error processing authentication. Please log in again.");
+                window.history.replaceState({}, document.title, "/index.html");
+                return;
             }
-            
-            // Clean up URL without reloading
-            window.history.replaceState({}, document.title, "/index.html");
-            
-            // Redirect to dashboard
-            console.log("✅ Authentication successful! Redirecting to dashboard...");
-            alert("Login successful!");
-            setTimeout(() => {
-                window.location.href = "/dashboard.html";
-            }, 500);
-            return;
         }
     }
 
