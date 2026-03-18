@@ -47,6 +47,15 @@ function login() {
     sessionStorage.setItem("oauth_nonce", nonce);
     sessionStorage.setItem("oauth_state", state);
     
+    // DEBUG: Log redirect URI configuration
+    console.log("=== LOGIN DEBUG INFO ===");
+    console.log("Current Origin:", window.location.origin);
+    console.log("Redirect URI being sent:", redirectUri);
+    console.log("Client ID:", CLIENT_ID);
+    console.log("Cognito Domain:", COGNITO_DOMAIN);
+    console.log("Nonce (for replay attack prevention):", nonce);
+    console.log("State (for CSRF protection):", state);
+    
     const loginUrl = 
         `${COGNITO_DOMAIN}/oauth2/authorize?` +
         `client_id=${CLIENT_ID}&` +
@@ -57,8 +66,10 @@ function login() {
         `state=${encodeURIComponent(state)}&` +
         `response_mode=fragment`;
     
-    console.log("Redirecting to Cognito OAuth2 Authorize endpoint");
-    console.log("Login URL:", loginUrl);
+    console.log("%c📍 IMPORTANT: Copy this redirect_uri and verify it's in Cognito's 'Allowed Callback URLs':", "color: red; font-weight: bold;");
+    console.log("%c" + redirectUri, "color: orange; font-weight: bold; font-size: 12px;");
+    console.log("Full Login URL:", loginUrl);
+    
     window.location.href = loginUrl;
 }
 
@@ -70,6 +81,12 @@ function signup() {
     sessionStorage.setItem("oauth_nonce", nonce);
     sessionStorage.setItem("oauth_state", state);
     
+    // DEBUG: Log redirect URI configuration
+    console.log("=== SIGNUP DEBUG INFO ===");
+    console.log("Current Origin:", window.location.origin);
+    console.log("Redirect URI being sent:", redirectUri);
+    console.log("Client ID:", CLIENT_ID);
+    
     const signupUrl = 
         `${COGNITO_DOMAIN}/oauth2/authorize?` +
         `client_id=${CLIENT_ID}&` +
@@ -80,7 +97,9 @@ function signup() {
         `state=${encodeURIComponent(state)}&` +
         `response_mode=fragment`;
     
-    console.log("Redirecting to Cognito OAuth2 Authorize endpoint (signup)");
+    console.log("%c📍 IMPORTANT: Copy this redirect_uri and verify it's in Cognito's 'Allowed Callback URLs':", "color: red; font-weight: bold;");
+    console.log("%c" + redirectUri, "color: orange; font-weight: bold; font-size: 12px;");
+    
     window.location.href = signupUrl;
 }
 
