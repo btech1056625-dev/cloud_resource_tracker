@@ -99,6 +99,7 @@ function handleAuth() {
         const params = new URLSearchParams(hashParams);
         
         const idToken = params.get("id_token");
+        const state = params.get("state");
         const error = params.get("error");
         const errorDescription = params.get("error_description");
 
@@ -108,7 +109,24 @@ function handleAuth() {
             console.error("Error description:", errorDescription);
             alert(`Login failed: ${error} - ${errorDescription}`);
             window.history.replaceState({}, document.title, "/index.html");
+            sessionStorage.removeItem("oauth_nonce");
+            sessionStorage.removeItem("oauth_state");
             return;
+        }
+        
+        // SECURITY: Validate state parameter (CSRF protection)
+        if (state) {
+            const storedState = sessionStorage.getItem("oauth_state");
+            if (!storedState || state !== storedState) {
+                console.error("❌ State mismatch - possible CSRF attack");
+                console.error("Expected state:", storedState);
+                console.error("Returned state:", state);
+                alert("Security validation failed: State mismatch. Please log in again.");
+                window.history.replaceState({}, document.title, "/index.html");
+                sessionStorage.removeItem("oauth_nonce");
+                sessionStorage.removeItem("oauth_state");
+                return;
+            }
         }
 
         if (idToken) {
