@@ -1,7 +1,12 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Check authentication first
-    if (!isAuthenticated()) {
-        console.log("User not authenticated - redirecting to login");
+    // Get current page
+    const currentPath = window.location.pathname.toLowerCase();
+    const isLandingPage = currentPath.includes('index.html') || currentPath === '/' || currentPath === '';
+    const isSignupPage = currentPath.includes('signup.html');
+    
+    // Only enforce auth on protected pages (not landing or signup)
+    if (!isLandingPage && !isSignupPage && !isAuthenticated()) {
+        console.log("User not authenticated on protected page - redirecting to login");
         window.location.href = "/index.html";
         return;
     }
