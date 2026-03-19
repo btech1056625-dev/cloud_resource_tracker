@@ -13,6 +13,118 @@ const getRedirectUri = () => {
     return `${origin}/index.html`;
 };
 
+/**
+ * Decode JWT token payload without external library
+ * @param {string} token - JWT token
+ * @returns {object} Decoded payload
+ */
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        console.error("❌ Failed to decode JWT:", e);
+        return null;
+    }
+}
+
+/**
+ * Check if token is expired based on exp claim
+ */
+function isTokenExpired(token) {
+    if (!token) return true;
+    
+    try {
+        const payload = parseJwt(token);
+        if (!payload || !payload.exp) return true;
+        
+        // Token is expired if expiration time is in the past
+        return payload.exp * 1000 < Date.now();
+    } catch (e) {
+        return true;
+    }
+}
+
+/**
+ * Get valid token - checks expiration
+ * @returns {string|null} Valid token or null if expired/missing
+ */
+function getValidToken() {
+    const token = localStorage.getItem("idToken");
+    
+    if (!token) {
+        console.warn("⚠️ No token in storage");
+        return null;
+    }
+    
+    if (isTokenExpired(token)) {
+        console.error("❌ Token has expired");
+        logout();
+        return null;
+    }
+    
+    return token;
+}
+
+/**
+ * Set up automatic token refresh before expiration
+ * @param {number} expiresAt - Timestamp when token expires (in milliseconds)
+ */
+function setupTokenRefresh(expiresAt) {
+    const now = Date.now();
+    const timeUntilExpiry = expiresAt - now;
+    
+    // Refresh 5 minutes before expiration, minimum 1 minute after now
+    const refreshTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 60 * 1000);
+    
+    console.log(`⏲️ Token refresh scheduled in ${Math.round(refreshTime / 1000 / 60)} minutes`);
+    
+    // Store timeout ID so we can clear it on logout
+    const refreshTimeoutId = setTimeout(() => {
+        console.log("🔄 Attempting to refresh token...");
+        attemptTokenRefresh();
+    }, refreshTime);
+    
+    // Store timeout ID for cleanup
+    sessionStorage.setItem("tokenRefreshTimeoutId", refreshTimeoutId);
+}
+
+/**
+ * Attempt to refresh token by re-authenticating with Cognito
+ * Note: With implicit grant, we need to redirect to auth endpoint
+ */
+function attemptTokenRefresh() {
+    console.log("🔄 Token refresh required - redirecting to re-authorize");
+    
+    // For implicit grant flow, we need to redirect to Cognito to get a new token
+    // The user will not see the Cognito login if they still have a valid session cookie
+    const nonce = generateNonce();
+    const state = generateState();
+    
+    sessionStorage.setItem("oauth_nonce", nonce);
+    sessionStorage.setItem("oauth_state", state);
+    sessionStorage.setItem("isTokenRefresh", "true");
+    
+    const redirectUri = getRedirectUri();
+    const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        response_type: "token id_token",
+        scope: "openid email profile",
+        redirect_uri: redirectUri,
+        nonce: nonce,
+        state: state,
+        response_mode: "fragment",
+        prompt: "none"  // Don't show login UI if user has valid session
+    });
+    
+    const refreshUrl = `${COGNITO_DOMAIN}/oauth2/authorize?${params.toString()}`;
+    window.location.href = refreshUrl;
+}
+
 // Generate random nonce for OAuth2 security (prevents token replay attacks)
 // Required by AWS Cognito for implicit grant flow with id_token response type
 const generateNonce = () => {
@@ -211,6 +323,9 @@ function handleAuth() {
                 localStorage.setItem("userEmail", payload.email || "user@example.com");
                 localStorage.setItem("tokenExpiry", payload.exp * 1000);
                 
+                // Setup token refresh (refresh 5 minutes before expiration)
+                setupTokenRefresh(payload.exp * 1000);
+                
                 // Clean up session storage
                 sessionStorage.removeItem("oauth_nonce");
                 sessionStorage.removeItem("oauth_state");
@@ -241,8 +356,11 @@ function handleAuth() {
 }
 
 function getToken() {
-    const token = localStorage.getItem("idToken");
-    console.log("getToken called - Token exists:", !!token);
+    // Use getValidToken() instead of just checking storage
+    const token = getValidToken();
+    if (!token) {
+        console.error("❌ No valid token - user must re-authenticate");
+    }
     return token;
 }
 
@@ -250,6 +368,9 @@ function logout() {
     console.log("Logging out...");
     localStorage.removeItem("idToken");
     localStorage.removeItem("userEmail");
+    localStorage.removeItem("tokenExpiry");
+    sessionStorage.removeItem("oauth_nonce");
+    sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("authCode");
 
     const redirectUri = getRedirectUri();
@@ -262,18 +383,47 @@ function logout() {
     window.location.href = logoutUrl;
 }
 
-function requireAuth() {
+/**
+ * Validate session and redirect to login if invalid
+ * Call this on page load for protected pages (dashboard, resources, etc.)
+ */
+function validateSessionOrRedirect() {
     const token = localStorage.getItem("idToken");
-    console.log("requireAuth called - Token found:", !!token);
-
-    if (!token) {
-        console.log("No token found, redirecting to login page");
+    const userEmail = localStorage.getItem("userEmail");
+    
+    if (!token || !userEmail) {
+        console.warn("⚠️ No session found - redirecting to login");
         window.location.href = "/index.html";
-    } else {
-        console.log("User is authenticated");
+        return false;
     }
+    
+    if (isTokenExpired(token)) {
+        console.error("❌ Session token has expired - forcing logout");
+        logout();
+        return false;
+    }
+    
+    // Validate token structure
+    const payload = parseJwt(token);
+    if (!payload) {
+        console.error("❌ Invalid token format");
+        logout();
+        return false;
+    }
+    
+    console.log("✅ Session is valid. User:", userEmail);
+    return true;
+}
+
+function requireAuth() {
+    // Use the new validateSessionOrRedirect function
+    return validateSessionOrRedirect();
 }
 
 function isAuthenticated() {
-    return !!localStorage.getItem("idToken");
+    const token = localStorage.getItem("idToken");
+    if (!token) return false;
+    
+    // Don't just check existence - validate expiration
+    return !isTokenExpired(token);
 }

@@ -13,20 +13,16 @@ function isTokenExpired() {
 }
 
 /**
- * Verify token exists and is valid before making API calls
+ * Get valid token - checks expiration before making API calls
+ * Calls getValidToken() from auth.js to validate token status
  */
-function getValidToken() {
-    const token = localStorage.getItem("idToken");
-    if (!token) {
-        console.warn("⚠️ No token found - redirecting to login");
-        window.location.href = "/index.html";
-        return null;
-    }
+function getValidTokenForApi() {
+    const token = typeof getValidToken === 'function' 
+        ? getValidToken() 
+        : localStorage.getItem("idToken");
     
-    if (isTokenExpired()) {
-        console.warn("⚠️ Token expired - force logout");
-        logout();
-        return null;
+    if (!token) {
+        throw new Error("No valid authentication token. Please log in again.");
     }
     
     return token;
@@ -69,7 +65,7 @@ async function handleApiResponse(response) {
 // ----------------------------
 async function getResources() {
     try {
-        const token = getValidToken();
+        const token = getValidTokenForApi();
         if (!token) return { success: false, data: [], message: "Authentication required" };
 
         const response = await fetch(`${API_BASE_URL}get_resource.php`, {
@@ -106,7 +102,7 @@ async function addResource(resourceData) {
             throw new Error("Provider is required");
         }
         
-        const token = getValidToken();
+        const token = getValidTokenForApi();
         if (!token) return { success: false, message: "Authentication required" };
         
         const response = await fetch(`${API_BASE_URL}add_resource.php`, {
@@ -132,7 +128,7 @@ async function addResource(resourceData) {
 // ----------------------------
 async function getCostByService() {
     try {
-        const token = getValidToken();
+        const token = getValidTokenForApi();
         if (!token) return { success: false, data: [], message: "Authentication required" };
         
         const response = await fetch(`${API_BASE_URL}get_cost_by_service.php`, {
@@ -156,7 +152,7 @@ async function getCostByService() {
 // ----------------------------
 async function getStatusSummary() {
     try {
-        const token = getValidToken();
+        const token = getValidTokenForApi();
         if (!token) return { success: false, message: "Authentication required" };
         
         const response = await fetch(`${API_BASE_URL}get_summary_status.php`, {
@@ -185,7 +181,7 @@ async function deleteResource(resourceId) {
             throw new Error("Resource ID is required");
         }
         
-        const token = getValidToken();
+        const token = getValidTokenForApi();
         if (!token) return { success: false, message: "Authentication required" };
         
         const response = await fetch(`${API_BASE_URL}delete_resource.php`, {

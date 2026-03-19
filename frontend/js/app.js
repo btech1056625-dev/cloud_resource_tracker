@@ -5,10 +5,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const isSignupPage = currentPath.includes('signup.html');
     
     // Only enforce auth on protected pages (not landing or signup)
-    if (!isLandingPage && !isSignupPage && !isAuthenticated()) {
-        console.log("User not authenticated on protected page - redirecting to login");
-        window.location.href = "/index.html";
-        return;
+    if (!isLandingPage && !isSignupPage) {
+        // Use validateSessionOrRedirect from auth.js to check expiration
+        if (!validateSessionOrRedirect()) {
+            return; // Redirect already happened
+        }
     }
     
     // Initialize Charts if on Dashboard
