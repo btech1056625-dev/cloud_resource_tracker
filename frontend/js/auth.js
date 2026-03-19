@@ -53,22 +53,24 @@ function login() {
     console.log("Redirect URI being sent:", redirectUri);
     console.log("Client ID:", CLIENT_ID);
     console.log("Cognito Domain:", COGNITO_DOMAIN);
-    console.log("Nonce (for replay attack prevention):", nonce);
-    console.log("State (for CSRF protection):", state);
     
-    const loginUrl = 
-        `${COGNITO_DOMAIN}/oauth2/authorize?` +
-        `client_id=${CLIENT_ID}&` +
-        `response_type=id_token&` +
-        `scope=openid+email+profile&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `nonce=${encodeURIComponent(nonce)}&` +
-        `state=${encodeURIComponent(state)}&` +
-        `response_mode=fragment`;
+    // Build login URL for implicit grant flow
+    // Note: For implicit grant with ID token, use response_type=token id_token
+    const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        response_type: "token id_token",  // Changed from "id_token" to include token
+        scope: "openid email profile",    // Space-separated instead of plus-separated
+        redirect_uri: redirectUri,
+        nonce: nonce,
+        state: state,
+        response_mode: "fragment"
+    });
     
-    console.log("%c📍 IMPORTANT: Copy this redirect_uri and verify it's in Cognito's 'Allowed Callback URLs':", "color: red; font-weight: bold;");
-    console.log("%c" + redirectUri, "color: orange; font-weight: bold; font-size: 12px;");
-    console.log("Full Login URL:", loginUrl);
+    const loginUrl = `${COGNITO_DOMAIN}/oauth2/authorize?${params.toString()}`;
+    
+    console.log("%c📍 Login URL constructed:", "color: green; font-weight: bold;");
+    console.log(loginUrl);
+    console.log("Redirect URI:", redirectUri);
     
     window.location.href = loginUrl;
 }
@@ -83,23 +85,23 @@ function signup() {
     
     // DEBUG: Log redirect URI configuration
     console.log("=== SIGNUP DEBUG INFO ===");
-    console.log("Current Origin:", window.location.origin);
     console.log("Redirect URI being sent:", redirectUri);
     console.log("Client ID:", CLIENT_ID);
     
-    const signupUrl = 
-        `${COGNITO_DOMAIN}/oauth2/authorize?` +
-        `client_id=${CLIENT_ID}&` +
-        `response_type=id_token&` +
-        `scope=openid+email+profile&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `nonce=${encodeURIComponent(nonce)}&` +
-        `state=${encodeURIComponent(state)}&` +
-        `response_mode=fragment`;
+    // Build signup URL for implicit grant flow
+    const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        response_type: "token id_token",  // Changed from "id_token" to include token
+        scope: "openid email profile",    // Space-separated instead of plus-separated
+        redirect_uri: redirectUri,
+        nonce: nonce,
+        state: state,
+        response_mode: "fragment"
+    });
     
-    console.log("%c📍 IMPORTANT: Copy this redirect_uri and verify it's in Cognito's 'Allowed Callback URLs':", "color: red; font-weight: bold;");
-    console.log("%c" + redirectUri, "color: orange; font-weight: bold; font-size: 12px;");
+    const signupUrl = `${COGNITO_DOMAIN}/oauth2/authorize?${params.toString()}`;
     
+    console.log("Signup URL:", signupUrl);
     window.location.href = signupUrl;
 }
 
@@ -107,9 +109,8 @@ function handleAuth() {
     console.log("=== handleAuth function invoked ===");
     console.log("Current URL:", window.location.href);
     console.log("Hash:", window.location.hash);
-    console.log("Search:", window.location.search);
 
-    // Check for id_token in URL hash (from Cognito implicit grant)
+    // Check for tokens in URL hash (from Cognito implicit grant)
     const hash = window.location.hash;
     
     if (hash) {
@@ -117,7 +118,8 @@ function handleAuth() {
         const hashParams = hash.substring(1);
         const params = new URLSearchParams(hashParams);
         
-        const idToken = params.get("id_token");
+        // Cognito returns either id_token or access_token depending on response_type
+        const idToken = params.get("id_token") || params.get("access_token");
         const state = params.get("state");
         const error = params.get("error");
         const errorDescription = params.get("error_description");
@@ -149,7 +151,7 @@ function handleAuth() {
         }
 
         if (idToken) {
-            console.log("✅ ID token received from Cognito");
+            console.log("✅ Token received from Cognito");
             
             // Decode and validate token
             try {
@@ -174,10 +176,12 @@ function handleAuth() {
                     console.error("❌ Token has expired");
                     alert("Token has expired. Please log in again.");
                     window.history.replaceState({}, document.title, "/index.html");
+                    sessionStorage.removeItem("oauth_nonce");
+                    sessionStorage.removeItem("oauth_state");
                     return;
                 }
                 
-                // SECURITY: Validate nonce (CSRF protection)
+                // SECURITY: Validate nonce (replay attack prevention)
                 const storedNonce = sessionStorage.getItem("oauth_nonce");
                 if (!storedNonce || payload.nonce !== storedNonce) {
                     console.error("❌ Nonce mismatch - possible attack");
@@ -190,11 +194,15 @@ function handleAuth() {
                     return;
                 }
                 
-                // SECURITY: Validate audience (client_id)
-                if (payload.aud !== CLIENT_ID) {
+                // SECURITY: Validate audience (client_id) if present
+                if (payload.aud && payload.aud !== CLIENT_ID) {
                     console.error("❌ Audience mismatch");
+                    console.error("Expected:", CLIENT_ID);
+                    console.error("Got:", payload.aud);
                     alert("Security validation failed: Invalid audience. Please log in again.");
                     window.history.replaceState({}, document.title, "/index.html");
+                    sessionStorage.removeItem("oauth_nonce");
+                    sessionStorage.removeItem("oauth_state");
                     return;
                 }
                 
@@ -222,12 +230,14 @@ function handleAuth() {
                 console.error("❌ Error processing token:", e);
                 alert("Error processing authentication. Please log in again.");
                 window.history.replaceState({}, document.title, "/index.html");
+                sessionStorage.removeItem("oauth_nonce");
+                sessionStorage.removeItem("oauth_state");
                 return;
             }
         }
     }
 
-    console.log("ℹ️  No ID token found in URL hash");
+    console.log("ℹ️  No token found in URL hash");
 }
 
 function getToken() {
