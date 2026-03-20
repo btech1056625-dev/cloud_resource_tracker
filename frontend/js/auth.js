@@ -14,24 +14,17 @@ const COGNITO_CLIENT_ID = '6tkb0i2gbosk9j00f4ue3rq5ca';
 // ── COGNITO SETUP ────────────────────────────────────
 let userPool;
 
-// Wait for Cognito SDK to be available
+// Initialize Cognito User Pool
+// Script order ensures Cognito SDK is available when auth.js executes
 if (typeof AmazonCognitoIdentity !== 'undefined') {
     const poolData = {
         UserPoolId: COGNITO_USER_POOL_ID,
         ClientId: COGNITO_CLIENT_ID,
     };
     userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+    console.log('✅ Cognito User Pool initialized');
 } else {
-    // Fallback: initialize when SDK loads
-    document.addEventListener('DOMContentLoaded', () => {
-        if (typeof AmazonCognitoIdentity !== 'undefined' && !userPool) {
-            const poolData = {
-                UserPoolId: COGNITO_USER_POOL_ID,
-                ClientId: COGNITO_CLIENT_ID,
-            };
-            userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-        }
-    });
+    console.error('❌ AmazonCognitoIdentity SDK not available');
 }
 
 // Holds the pending-verification email
@@ -464,29 +457,40 @@ function logout() {
 
 // ── CHECK IF ALREADY LOGGED IN ────────────────────────
 /**
- * IIFE to check existing session on page load
+ * Function to check existing session on page load
  * Prevents infinite redirect loops by only running once at startup
  */
-(function checkExistingSession() {
+function checkExistingSession() {
     console.log('🔍 Checking for existing session...');
     
     const showPage = () => {
         document.body.style.opacity = '1';
     };
     
-    // Wait for Cognito SDK to be available
-    if (typeof AmazonCognitoIdentity === 'undefined') {
-        console.warn('⚠️ Cognito SDK not yet loaded, retrying...');
-        setTimeout(checkExistingSession, 100);
-        return;
-    }
+    // Wait for Cognito SDK to be available (max 5 seconds with 20 retries)
+    let retries = 0;
+    const maxRetries = 20;
     
-    // Create pool if not already created
-    if (typeof userPool === 'undefined') {
-        console.log('ℹ️ User pool not initialized yet');
-        showPage();
-        return;
-    }
+    const waitForSDK = () => {
+        if (typeof AmazonCognitoIdentity !== 'undefined' && userPool) {
+            // SDK loaded and pool initialized, proceed with session check
+            checkSession();
+        } else if (retries < maxRetries) {
+            retries++;
+            setTimeout(waitForSDK, 250);
+        } else {
+            console.warn('⚠️ Cognito SDK failed to load after timeout, showing page');
+            showPage();
+        }
+    };
+    
+    function checkSession() {
+        // Create pool if not already created
+        if (typeof userPool === 'undefined' || !userPool) {
+            console.log('ℹ️ User pool not initialized yet');
+            showPage();
+            return;
+        }
     
     const currentUser = userPool.getCurrentUser();
     
@@ -530,7 +534,13 @@ function logout() {
             showPage();
         }
     });
-})();
+    }
+    
+    waitForSDK();
+}
+
+// Call checkExistingSession when DOM is ready
+document.addEventListener('DOMContentLoaded', checkExistingSession);
 
 // ── SESSION VALIDATION FOR PROTECTED PAGES ───────────
 /**
