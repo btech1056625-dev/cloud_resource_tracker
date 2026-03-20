@@ -1,5 +1,5 @@
 /**
- * Cloud Resource Tracker Authentication Handler (v6.0)
+ * Cloud Resource Tracker Authentication Handler (v6.1)
  * Direct Cognito API calls via fetch - NO external SDK dependency
  * Eliminates "SDK failed to load" timeout issues completely
  */
@@ -209,7 +209,8 @@ async function login() {
 }
 
 // ──────────────────────────────────────────────────────
-// SIGN UP - Direct Cognito AdminUserSignUp API
+// SIGN UP - Direct Cognito Identity Provider API
+// Uses the public SignUp action (no SigV4 signing needed)
 // ──────────────────────────────────────────────────────
 async function signup() {
     clearErrors();
@@ -239,62 +240,58 @@ async function signup() {
     setLoading('signup-btn', true);
 
     try {
-        // Call Cognito InitiateAuth for user signup via SignUp endpoint
-        // Using Cognito's built-in signup flow without backend dependency
-        const signupResponse = await fetch(
-            `https://${COGNITO_CONFIG.cognitoDomain}/sign_up`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    client_id: COGNITO_CONFIG.clientId,
-                    username: email,
-                    password: password,
-                    user_attributes: [
-                        { Name: 'email', Value: email },
-                        { Name: 'given_name', Value: firstName },
-                        { Name: 'family_name', Value: lastName },
-                    ].map(attr => `${attr.Name}=${attr.Value}`).join('&'),
-                }),
-            }
-        );
+        // Use the Cognito Identity Provider API directly
+        // This is an unauthenticated public API - no AWS signing required
+        const cognitoIdpUrl = `https://cognito-idp.${COGNITO_CONFIG.region}.amazonaws.com/`;
 
-        // If Cognito endpoint doesn't work, use backend as fallback
-        if (!signupResponse.ok && signupResponse.status === 404) {
-            console.log('ℹ️ Cognito signup endpoint not available, using backend...');
-            // Try backend with simpler CORS-friendly approach
-            const backendResponse = await fetch('https://cloud-resource-tracker.duckdns.org/signup', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                    firstName,
-                    lastName,
-                }),
-            });
+        const signupResponse = await fetch(cognitoIdpUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-amz-json-1.1',
+                'X-Amz-Target': 'AWSCognitoIdentityProviderService.SignUp',
+            },
+            body: JSON.stringify({
+                ClientId: COGNITO_CONFIG.clientId,
+                Username: email,
+                Password: password,
+                UserAttributes: [
+                    { Name: 'email', Value: email },
+                    { Name: 'given_name', Value: firstName },
+                    { Name: 'family_name', Value: lastName },
+                ],
+            }),
+        });
 
-            const backendData = await backendResponse.json();
-            if (!backendResponse.ok) {
-                setLoading('signup-btn', false);
-                console.error('❌ Sign up error:', backendData);
-                showError('signup-error', backendData.message || 'Sign up failed. Email may already exist.');
-                return;
+        const data = await signupResponse.json();
+
+        if (!signupResponse.ok) {
+            setLoading('signup-btn', false);
+            console.error('❌ Cognito SignUp error:', data);
+
+            // Map Cognito error types to user-friendly messages
+            const errorType = data.__type || '';
+            let errorMsg = data.message || 'Sign up failed. Please try again.';
+
+            if (errorType.includes('UsernameExistsException')) {
+                errorMsg = 'An account with this email already exists.';
+            } else if (errorType.includes('InvalidPasswordException')) {
+                errorMsg = 'Password does not meet requirements. Use 8+ characters with uppercase, lowercase, numbers, and symbols.';
+            } else if (errorType.includes('InvalidParameterException')) {
+                errorMsg = data.message || 'Invalid input. Please check your details.';
             }
+
+            showError('signup-error', errorMsg);
+            return;
         }
 
-        console.log('✅ Sign up successful');
+        console.log('✅ Cognito SignUp successful:', data.UserSub);
 
         // Store pending info for verification
         sessionStorage.setItem('pendingEmail', email);
         sessionStorage.setItem('pendingPassword', password);
 
         // Show success message and redirect to verify
-        showError('signup-error', '✅ Account created! Check your email for verification code.', false);
+        showError('signup-error', '✅ Account created! Check your email for verification code.');
         
         setTimeout(() => {
             window.location.href = `verify.html?email=${encodeURIComponent(email)}`;
@@ -304,9 +301,8 @@ async function signup() {
         setLoading('signup-btn', false);
         console.error('❌ Sign up error:', err);
         
-        // If backend CORS is the issue, provide helpful message
         if (err.message.includes('Failed to fetch')) {
-            showError('signup-error', 'Backend service temporarily unavailable. Please try again.');
+            showError('signup-error', 'Could not reach authentication service. Please try again.');
         } else {
             showError('signup-error', 'Network error. Please try again.');
         }
@@ -336,15 +332,18 @@ async function verifyCode() {
     setLoading('verify-btn', true);
 
     try {
-        // Call backend Lambda function for confirmation
-        const response = await fetch('https://cloud-resource-tracker.duckdns.org/confirm-signup', {
+        // Call Cognito Identity Provider API directly for confirmation
+        const cognitoIdpUrl = `https://cognito-idp.${COGNITO_CONFIG.region}.amazonaws.com/`;
+        const response = await fetch(cognitoIdpUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/x-amz-json-1.1',
+                'X-Amz-Target': 'AWSCognitoIdentityProviderService.ConfirmSignUp',
+            },
             body: JSON.stringify({
-                email,
-                code,
-                userPoolId: COGNITO_CONFIG.userPoolId,
-                clientId: COGNITO_CONFIG.clientId,
+                ClientId: COGNITO_CONFIG.clientId,
+                Username: email,
+                ConfirmationCode: code,
             }),
         });
 
@@ -454,13 +453,17 @@ async function resendCode() {
     }
 
     try {
-        const response = await fetch('https://cloud-resource-tracker.duckdns.org/resend-confirmation-code', {
+        // Call Cognito Identity Provider API directly
+        const cognitoIdpUrl = `https://cognito-idp.${COGNITO_CONFIG.region}.amazonaws.com/`;
+        const response = await fetch(cognitoIdpUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/x-amz-json-1.1',
+                'X-Amz-Target': 'AWSCognitoIdentityProviderService.ResendConfirmationCode',
+            },
             body: JSON.stringify({
-                email,
-                userPoolId: COGNITO_CONFIG.userPoolId,
-                clientId: COGNITO_CONFIG.clientId,
+                ClientId: COGNITO_CONFIG.clientId,
+                Username: email,
             }),
         });
 
