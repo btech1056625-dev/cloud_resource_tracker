@@ -62,7 +62,7 @@
 
         <div id="verify-error" class="auth-error"></div>
 
-        <form onsubmit="event.preventDefault(); verifyCode();">
+        <form id="verify-form">
             <div class="form-group">
                 <label for="verify-code">Verification Code</label>
                 <input type="text" id="verify-code" name="code" placeholder="000000" maxlength="6" required>
@@ -78,7 +78,7 @@
 
         <p style="text-align: center; margin-top: 2rem; font-size: 0.875rem; color: var(--text-secondary);">
             Didn't receive a code?
-            <a href="#" onclick="resendCode(); return false;" id="resend-btn"
+            <a href="#" id="resend-btn"
                 style="color: var(--accent-blue); text-decoration: none; font-weight: 600;">
                 Resend code
             </a>
