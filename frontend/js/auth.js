@@ -1,22 +1,32 @@
 /**
- * Cloud Resource Tracker Authentication Handler
- * Uses minimal fetch-based Cognito auth (no SDK required)
+ * Cloud Resource Tracker Authentication Handler (v6.0)
+ * Direct Cognito API calls via fetch - NO external SDK dependency
+ * Eliminates "SDK failed to load" timeout issues completely
  */
 
 'use strict';
 
-console.log('🚀 CLOUD RESOURCE TRACKER AUTH V5.0: Loaded');
+console.log('🚀 CLOUD RESOURCE TRACKER AUTH V6.0: Loaded');
 
-// ── HELPER FUNCTIONS ──────────────────────────────
+// ──────────────────────────────────────────────────────
+// CONFIG - COGNITO CREDENTIALS (UPDATED)
+// ──────────────────────────────────────────────────────
+const COGNITO_CONFIG = {
+    userPoolId: 'ap-southeast-2_ZMufTlAjo',
+    clientId: '6tkb0i2gbosk9j00f4ue3rq5ca',
+    region: 'ap-southeast-2',
+    cognitoDomain: 'ap-southeast-2zmuftlajo.auth.ap-southeast-2.amazoncognito.com',
+};
+
+// ──────────────────────────────────────────────────────
+// HELPER FUNCTIONS
+// ──────────────────────────────────────────────────────
 function setLoading(btnId, loading) {
     const btn = document.getElementById(btnId);
     if (!btn) return;
-
     const text = btn.querySelector('.btn-text');
     const spinner = btn.querySelector('.btn-spinner');
-
     btn.disabled = loading;
-
     if (text) text.classList.toggle('hidden', loading);
     if (spinner) spinner.classList.toggle('hidden', !loading);
 }
@@ -36,9 +46,56 @@ function clearErrors() {
     });
 }
 
-// ── PASSWORD VISIBILITY TOGGLE ────────────────────
+function storeSession(idToken, userId, email = null) {
+    localStorage.setItem('tasky_id_token', idToken);
+    localStorage.setItem('tasky_user_id', userId);
+    if (email) localStorage.setItem('userEmail', email);
+}
+
+function clearSession() {
+    localStorage.removeItem('tasky_id_token');
+    localStorage.removeItem('tasky_user_id');
+    localStorage.removeItem('userEmail');
+    sessionStorage.removeItem('pendingEmail');
+    sessionStorage.removeItem('pendingPassword');
+}
+
+function getStoredToken() {
+    return localStorage.getItem('tasky_id_token');
+}
+
+function getStoredUserId() {
+    return localStorage.getItem('tasky_user_id');
+}
+
+// ──────────────────────────────────────────────────────
+// JWT UTILITIES
+// ──────────────────────────────────────────────────────
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+            atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+        );
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        console.error('❌ Failed to parse JWT:', e);
+        return null;
+    }
+}
+
+function isTokenExpired(token) {
+    const payload = parseJwt(token);
+    if (!payload || !payload.exp) return true;
+    return Math.floor(Date.now() / 1000) > payload.exp;
+}
+
+// ──────────────────────────────────────────────────────
+// PASSWORD VISIBILITY TOGGLE
+// ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    // Password eye button
+    // Password eye buttons
     document.querySelectorAll('.eye-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -51,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Sign In
+    // Sign In Form
     const signinForm = document.getElementById('signin-form');
     if (signinForm) {
         signinForm.addEventListener('submit', (e) => {
@@ -60,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Sign Up
+    // Sign Up Form
     const signupForm = document.getElementById('signup-form');
     if (signupForm) {
         signupForm.addEventListener('submit', (e) => {
@@ -69,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Verify
+    // Verify Form
     const verifyForm = document.getElementById('verify-form');
     if (verifyForm) {
         verifyForm.addEventListener('submit', (e) => {
@@ -78,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Resend Code
+    // Resend Code Button
     const resendBtn = document.getElementById('resend-btn');
     if (resendBtn) {
         resendBtn.addEventListener('click', (e) => {
@@ -87,11 +144,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Check existing session
+    // Check existing session on page load
     checkExistingSession();
 });
 
-// ── LOGIN HANDLER ─────────────────────────────────
+// ──────────────────────────────────────────────────────
+// LOGIN - USER_PASSWORD_AUTH FLOW
+// ──────────────────────────────────────────────────────
 async function login() {
     clearErrors();
     const email = document.getElementById('signin-email')?.value;
@@ -105,227 +164,280 @@ async function login() {
     setLoading('signin-btn', true);
 
     try {
-        const result = await CognitoAuth.signIn(email, password);
+        const response = await fetch(
+            `https://${COGNITO_CONFIG.cognitoDomain}/oauth2/token`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    grant_type: 'password',
+                    client_id: COGNITO_CONFIG.clientId,
+                    username: email,
+                    password: password,
+                    scope: 'openid profile email',
+                }),
+            }
+        );
 
-        if (result.success) {
-            console.log('✅ Login successful');
-            setTimeout(() => {
-                window.location.replace('dashboard.html');
-            }, 100);
-        } else {
-            showError('signin-error', result.error || 'Login failed');
+        const data = await response.json();
+
+        if (!response.ok) {
             setLoading('signin-btn', false);
+            console.error('❌ Login error:', data);
+            showError('signin-error', data.error_description || 'Login failed. Please check your credentials.');
+            return;
         }
+
+        // Success - store tokens
+        console.log('✅ Login successful');
+        const idToken = data.id_token;
+        const payload = parseJwt(idToken);
+
+        storeSession(idToken, payload.sub, payload.email);
+
+        // Redirect to dashboard
+        setTimeout(() => {
+            window.location.replace('dashboard.html');
+        }, 300);
     } catch (err) {
-        showError('signin-error', err.message);
         setLoading('signin-btn', false);
+        console.error('❌ Login error:', err);
+        showError('signin-error', 'Network error. Please try again.');
     }
 }
 
-// ── SIGN UP (signup.html) ──────────────────────────────
-function signup() {
-    // Check if Cognito SDK is available
-    if (typeof AmazonCognitoIdentity === 'undefined') {
-        console.error('❌ Cognito SDK not loaded yet');
-        showError('signup-error', 'Authentication service not ready. Please refresh the page.');
-        setLoading('signup-btn', false);
-        return;
-    }
-
+// ──────────────────────────────────────────────────────
+// SIGN UP
+// ──────────────────────────────────────────────────────
+async function signup() {
     clearErrors();
-    
-    const firstNameInput = document.getElementById('firstName');
-    const lastNameInput = document.getElementById('lastName');
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const confirmPasswordInput = document.getElementById('confirmPassword');
-    
-    if (!firstNameInput || !lastNameInput || !emailInput || !passwordInput || !confirmPasswordInput) {
-        console.error('❌ Required form fields not found');
-        return;
-    }
-    
-    const firstName = firstNameInput.value.trim();
-    const lastName = lastNameInput.value.trim();
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-    const confirmPassword = confirmPasswordInput.value;
-    
+
+    const firstName = document.getElementById('firstName')?.value.trim();
+    const lastName = document.getElementById('lastName')?.value.trim();
+    const email = document.getElementById('email')?.value.trim();
+    const password = document.getElementById('password')?.value;
+    const confirmPassword = document.getElementById('confirmPassword')?.value;
+
     // Validation
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
         showError('signup-error', 'Please fill in all fields.');
         return;
     }
-    
+
     if (password.length < 8) {
         showError('signup-error', 'Password must be at least 8 characters.');
         return;
     }
-    
+
     if (password !== confirmPassword) {
         showError('signup-error', 'Passwords do not match.');
         return;
     }
-    
+
     setLoading('signup-btn', true);
-    
+
     try {
-        const attributeList = [
-            new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
-            new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: firstName }),
-            new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'family_name', Value: lastName }),
-        ];
-        
-        userPool.signUp(email, password, attributeList, null, (err, result) => {
-            setLoading('signup-btn', false);
-            
-            if (err) {
-                console.error('❌ Sign up failed:', err.message);
-                showError('signup-error', err.message || 'Sign up failed. Please try again.');
-                return;
-            }
-            
-            console.log('✅ Sign up successful, showing verification form');
-            
-            // Store pending email and password for auto-sign-in after verification
-            pendingEmail = email;
-            sessionStorage.setItem('pendingPassword', password);
-            sessionStorage.setItem('pendingEmail', email);
-            
-            // Redirect to verification page
-            window.location.href = 'verify.html';
+        // Call backend Lambda function for sign-up
+        const response = await fetch('https://cloud-resource-tracker.duckdns.org/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email,
+                password,
+                firstName,
+                lastName,
+                userPoolId: COGNITO_CONFIG.userPoolId,
+                clientId: COGNITO_CONFIG.clientId,
+            }),
         });
-    } catch (e) {
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            setLoading('signup-btn', false);
+            console.error('❌ Sign up error:', data);
+            showError('signup-error', data.message || 'Sign up failed. Email may already exist.');
+            return;
+        }
+
+        console.log('✅ Sign up successful, verify email to continue');
+
+        // Store pending info
+        sessionStorage.setItem('pendingEmail', email);
+        sessionStorage.setItem('pendingPassword', password);
+
+        // Redirect to verify page
+        window.location.href = `verify.html?email=${encodeURIComponent(email)}`;
+    } catch (err) {
         setLoading('signup-btn', false);
-        console.error('❌ Error during sign up:', e);
-        showError('signup-error', 'An error occurred. Please try again.');
+        console.error('❌ Sign up error:', err);
+        showError('signup-error', 'Network error. Please try again.');
     }
 }
 
-// ── VERIFY EMAIL CODE ──────────────────────────────────
-function verifyCode() {
-    // Check if Cognito SDK is available
-    if (typeof AmazonCognitoIdentity === 'undefined') {
-        console.error('❌ Cognito SDK not loaded yet');
-        showError('verify-error', 'Authentication service not ready. Please refresh the page.');
-        setLoading('verify-btn', false);
-        return;
-    }
-
+// ──────────────────────────────────────────────────────
+// VERIFY EMAIL CODE
+// ──────────────────────────────────────────────────────
+async function verifyCode() {
     clearErrors();
-    
-    const codeInput = document.getElementById('verify-code');
-    if (!codeInput) {
-        console.error('❌ Verify code input not found');
-        return;
-    }
-    
-    const code = codeInput.value.trim();
+
+    const code = document.getElementById('verify-code')?.value.trim();
     if (!code) {
         showError('verify-error', 'Please enter the verification code.');
         return;
     }
-    
-    // Get email from URL parameter or sessionStorage
+
     const urlParams = new URLSearchParams(window.location.search);
-    const email = urlParams.get('email') || sessionStorage.getItem('pendingEmail') || pendingEmail;
-    
+    const email = urlParams.get('email') || sessionStorage.getItem('pendingEmail');
+
     if (!email) {
         showError('verify-error', 'Email not found. Please sign up again.');
         return;
     }
-    
+
     setLoading('verify-btn', true);
-    
+
     try {
-        const cognitoUser = new AmazonCognitoIdentity.CognitoUser({
-            Username: email,
-            Pool: userPool,
+        // Call backend Lambda function for confirmation
+        const response = await fetch('https://cloud-resource-tracker.duckdns.org/confirm-signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email,
+                code,
+                userPoolId: COGNITO_CONFIG.userPoolId,
+                clientId: COGNITO_CONFIG.clientId,
+            }),
         });
-        
-        cognitoUser.confirmRegistration(code, true, (err) => {
-            if (err) {
-                setLoading('verify-btn', false);
-                console.error('❌ Verification failed:', err.message);
-                showError('verify-error', err.message || 'Invalid code. Please try again.');
-                return;
-            }
-            
-            console.log('✅ Email verified successfully');
-            
-            // Get password from sessionStorage
-            const password = sessionStorage.getItem('pendingPassword');
-            
-            if (!password) {
-                // Password not available, redirect to sign in
-                console.warn('⚠️ Password not found in session, redirecting to sign in');
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            setLoading('verify-btn', false);
+            console.error('❌ Verification error:', data);
+            showError('verify-error', data.message || 'Invalid code. Please try again.');
+            return;
+        }
+
+        console.log('✅ Email verified successfully');
+
+        // Auto sign-in after verification
+        const password = sessionStorage.getItem('pendingPassword');
+        if (password) {
+            // Sign in with verified email
+            const loginData = {
+                email,
+                password,
+            };
+
+            // Store credentials temporarily
+            sessionStorage.setItem('_login_email', email);
+            sessionStorage.setItem('_login_password', password);
+
+            // Auto-trigger login
+            setTimeout(() => {
+                autoLogin(email, password);
+            }, 500);
+        } else {
+            showError('verify-error', 'Email verified! Please sign in with your credentials.');
+            setTimeout(() => {
                 window.location.href = 'index.html';
-                return;
-            }
-            
-            // Auto sign-in after verification
-            const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({
-                Username: email,
-                Password: password,
-            });
-            
-            cognitoUser.authenticateUser(authDetails, {
-                onSuccess(result) {
-                    console.log('✅ Auto sign-in successful after verification');
-                    const idToken = result.getIdToken().getJwtToken();
-                    const payload = result.getIdToken().decodePayload();
-                    storeSession(idToken, payload.sub);
-                    localStorage.setItem('userEmail', payload.email || email);
-                    
-                    // Clear session data
-                    sessionStorage.removeItem('pendingPassword');
-                    sessionStorage.removeItem('pendingEmail');
-                    
-                    setTimeout(() => {
-                        window.location.replace('dashboard.html');
-                    }, 100);
-                },
-                onFailure(err) {
-                    setLoading('verify-btn', false);
-                    console.error('❌ Auto sign-in failed:', err.message);
-                    // Verified but auto-sign-in failed — redirect to sign-in page
-                    showError('verify-error', 'Email verified! Please sign in with your credentials.');
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 2000);
-                },
-            });
-        });
-    } catch (e) {
+            }, 2000);
+        }
+    } catch (err) {
         setLoading('verify-btn', false);
-        console.error('❌ Error during verification:', e);
-        showError('verify-error', 'An error occurred. Please try again.');
+        console.error('❌ Verification error:', err);
+        showError('verify-error', 'Network error. Please try again.');
     }
 }
 
-// ── RESEND VERIFICATION CODE ───────────────────────────
-function resendCode() {
+// ──────────────────────────────────────────────────────
+// AUTO-LOGIN AFTER VERIFICATION
+// ──────────────────────────────────────────────────────
+async function autoLogin(email, password) {
+    try {
+        const response = await fetch(
+            `https://${COGNITO_CONFIG.cognitoDomain}/oauth2/token`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    grant_type: 'password',
+                    client_id: COGNITO_CONFIG.clientId,
+                    username: email,
+                    password: password,
+                    scope: 'openid profile email',
+                }),
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.warn('⚠️ Auto sign-in failed after verification');
+            showError('verify-error', 'Email verified! Please sign in with your credentials.');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+            return;
+        }
+
+        console.log('✅ Auto sign-in successful after verification');
+        const idToken = data.id_token;
+        const payload = parseJwt(idToken);
+
+        storeSession(idToken, payload.sub, payload.email);
+        clearSession(); // Clear pending info
+
+        setTimeout(() => {
+            window.location.replace('dashboard.html');
+        }, 300);
+    } catch (err) {
+        console.error('❌ Auto sign-in error:', err);
+        showError('verify-error', 'Email verified! Please sign in manually.');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
+    }
+}
+
+// ──────────────────────────────────────────────────────
+// RESEND VERIFICATION CODE
+// ──────────────────────────────────────────────────────
+async function resendCode() {
     const urlParams = new URLSearchParams(window.location.search);
-    const email = urlParams.get('email') || sessionStorage.getItem('pendingEmail') || pendingEmail;
-    
+    const email = urlParams.get('email') || sessionStorage.getItem('pendingEmail');
+
     if (!email) {
         console.error('❌ Email not found for resend');
         return;
     }
-    
-    const cognitoUser = new AmazonCognitoIdentity.CognitoUser({
-        Username: email,
-        Pool: userPool,
-    });
-    
-    cognitoUser.resendConfirmationCode((err) => {
-        if (err) {
-            showError('verify-error', err.message || 'Failed to resend code.');
+
+    try {
+        const response = await fetch('https://cloud-resource-tracker.duckdns.org/resend-confirmation-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email,
+                userPoolId: COGNITO_CONFIG.userPoolId,
+                clientId: COGNITO_CONFIG.clientId,
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('❌ Resend error:', data);
+            showError('verify-error', data.message || 'Failed to resend code.');
             return;
         }
-        
+
         console.log('✅ Verification code resent');
-        
+
         const btn = document.getElementById('resend-btn');
         if (btn) {
             btn.textContent = 'Code resent ✓';
@@ -335,124 +447,93 @@ function resendCode() {
                 btn.disabled = false;
             }, 3000);
         }
-    });
+    } catch (err) {
+        console.error('❌ Resend error:', err);
+        showError('verify-error', 'Network error. Please try again.');
+    }
 }
 
-// ── LOGOUT ────────────────────────────────────────────
+// ──────────────────────────────────────────────────────
+// LOGOUT
+// ──────────────────────────────────────────────────────
 function logout() {
     console.log('Logging out...');
-    
-    const currentUser = userPool.getCurrentUser();
-    if (currentUser) {
-        currentUser.signOut();
-        console.log('✅ User signed out from Cognito');
-    }
-    
     clearSession();
     window.location.href = 'index.html';
 }
 
-// ── CHECK IF ALREADY LOGGED IN ────────────────────────
-/**
- * Function to check existing session on page load
- * Prevents infinite redirect loops by only running once at startup
- */
+// ──────────────────────────────────────────────────────
+// CHECK EXISTING SESSION ON PAGE LOAD
+// ──────────────────────────────────────────────────────
 function checkExistingSession() {
     console.log('🔍 Checking for existing session...');
-    
+
     const showPage = () => {
         document.body.style.opacity = '1';
     };
-    
-    // Wait for Cognito SDK to be available (max 5 seconds with 20 retries)
-    let retries = 0;
-    const maxRetries = 20;
-    
-    const waitForSDK = () => {
-        if (typeof AmazonCognitoIdentity !== 'undefined' && userPool) {
-            // SDK loaded and pool initialized, proceed with session check
-            checkSession();
-        } else if (retries < maxRetries) {
-            retries++;
-            setTimeout(waitForSDK, 250);
-        } else {
-            console.warn('⚠️ Cognito SDK failed to load after timeout, showing page');
-            showPage();
-        }
-    };
-    
-    function checkSession() {
-        // Create pool if not already created
-        if (typeof userPool === 'undefined' || !userPool) {
-            console.log('ℹ️ User pool not initialized yet');
-            showPage();
-            return;
-        }
-    
-    const currentUser = userPool.getCurrentUser();
-    
-    if (!currentUser) {
-        console.log('ℹ️ No current user in Cognito SDK');
+
+    const token = getStoredToken();
+
+    // No token stored
+    if (!token) {
+        console.log('ℹ️ No session token found');
         showPage();
         return;
     }
-    
-    currentUser.getSession((err, session) => {
-        if (err) {
-            console.warn('⚠️ Session check error:', err.message);
-            clearSession();
-            showPage();
-            return;
-        }
-        
-        if (session && session.isValid()) {
-            console.log('✅ Valid Cognito session found');
-            const idToken = session.getIdToken().getJwtToken();
-            const payload = session.getIdToken().decodePayload();
-            
-            storeSession(idToken, payload.sub);
-            localStorage.setItem('userEmail', payload.email || 'user@example.com');
-            
-            // Only redirect if not already on dashboard
-            const currentPage = window.location.pathname.toLowerCase();
-            if (!currentPage.includes('dashboard.html') && 
-                !currentPage.includes('view_resources.html') &&
-                !currentPage.includes('add_resource.html') &&
-                !currentPage.includes('profile.html')) {
-                console.log('✅ Redirecting to dashboard...');
-                window.location.replace('dashboard.html');
-            } else {
-                showPage();
-            }
-        } else {
-            console.log('⚠️ Invalid or expired session');
-            currentUser.signOut();
-            clearSession();
-            showPage();
-        }
-    });
+
+    // Token exists but is expired
+    if (isTokenExpired(token)) {
+        console.log('⚠️ Session token expired');
+        clearSession();
+        showPage();
+        return;
     }
-    
-    waitForSDK();
+
+    // Token is valid
+    console.log('✅ Valid session found');
+    const payload = parseJwt(token);
+    const userEmail = payload?.email;
+
+    if (userEmail) {
+        localStorage.setItem('userEmail', userEmail);
+    }
+
+    // Only redirect if not already on a protected page
+    const currentPage = window.location.pathname.toLowerCase();
+    const isAuthPage = currentPage.includes('index.html') || 
+                       currentPage.includes('signup.html') ||
+                       currentPage.includes('verify.html') ||
+                       currentPage === '/';
+
+    if (isAuthPage) {
+        // User has valid session, redirect to dashboard
+        console.log('✅ Redirecting to dashboard...');
+        window.location.replace('dashboard.html');
+    } else {
+        // Already on protected page, just show page
+        showPage();
+    }
 }
 
-// Call checkExistingSession when DOM is ready
-document.addEventListener('DOMContentLoaded', checkExistingSession);
-
-// ── SESSION VALIDATION FOR PROTECTED PAGES ───────────
-/**
- * Call this on protected pages (dashboard, resources, etc.)
- * to ensure user is authenticated
- */
+// ──────────────────────────────────────────────────────
+// SESSION VALIDATION FOR PROTECTED PAGES
+// ──────────────────────────────────────────────────────
 function validateSessionOrRedirect() {
     const token = getStoredToken();
-    
+
     if (!token) {
         console.warn('⚠️ No session token found - redirecting to login');
         window.location.href = 'index.html';
         return false;
     }
-    
+
+    if (isTokenExpired(token)) {
+        console.warn('⚠️ Session token expired - redirecting to login');
+        clearSession();
+        window.location.href = 'index.html';
+        return false;
+    }
+
     console.log('✅ Session token validated');
     return true;
 }

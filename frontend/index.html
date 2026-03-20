@@ -93,7 +93,7 @@
             <div class="form-group">
                 <label for="signin-password">Password</label>
                 <div style="position: relative;">
-                    <input type="password" id="signin-password" name="password" placeholder="••••••••" required>
+                    <input type="password" id="signin-password" name="password" placeholder="••••••••" autocomplete="current-password" required>
                     <button type="button" class="eye-btn" data-target="signin-password" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 0; font-size: 1rem;">👁</button>
                 </div>
             </div>
@@ -121,8 +121,7 @@
         </div>
     </div>
 
-    <script src="js/cognito-auth.js"></script>
-    <script src="js/auth.js?v=5.0"></script>
+    <script src="js/auth.js?v=6.0"></script>
     <script src="js/api.js?v=3"></script>
     <script src="js/app.js?v=3"></script>
 </body>
