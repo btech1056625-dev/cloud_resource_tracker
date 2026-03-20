@@ -57,6 +57,7 @@ h1, h2, h3, .brand {
     font-size: 1.5rem;
     margin-bottom: 3rem;
     background: var(--gradient-1);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     display: flex;
