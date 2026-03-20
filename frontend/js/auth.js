@@ -14,18 +14,31 @@ const COGNITO_CLIENT_ID = '6tkb0i2gbosk9j00f4ue3rq5ca';
 // ── COGNITO SETUP ────────────────────────────────────
 let userPool;
 
-// Initialize Cognito User Pool
-// Script order ensures Cognito SDK is available when auth.js executes
-if (typeof AmazonCognitoIdentity !== 'undefined') {
+// Initialize Cognito User Pool (SDK must load from script tag first)
+function initializeCognitoPool() {
+    if (typeof AmazonCognitoIdentity === 'undefined') {
+        console.warn('⚠️ AmazonCognitoIdentity SDK not available yet');
+        return false;
+    }
+
     const poolData = {
         UserPoolId: COGNITO_USER_POOL_ID,
         ClientId: COGNITO_CLIENT_ID,
     };
     userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
     console.log('✅ Cognito User Pool initialized');
-} else {
-    console.error('❌ AmazonCognitoIdentity SDK not available');
+    return true;
 }
+
+// Try to initialize immediately
+initializeCognitoPool();
+
+// Also try on DOMContentLoaded as fallback
+document.addEventListener('DOMContentLoaded', () => {
+    if (!userPool) {
+        initializeCognitoPool();
+    }
+});
 
 // Holds the pending-verification email
 let pendingEmail = '';
