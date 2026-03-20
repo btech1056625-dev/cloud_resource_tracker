@@ -5,32 +5,18 @@ header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
-
-if (!isset($current_user_id)) {
+if (!$current_user_id) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    echo json_encode(['error' => 'Unauthorized']);
     exit();
 }
-
 try {
-    // Mapping DB columns to Frontend keys
-    // service_name -> resource_name
-    // instance_type -> service_type
-    // region -> provider
     $stmt = $pdo->prepare("
-        SELECT 
-            resource_id, 
-            service_name AS resource_name, 
-            instance_type AS service_type, 
-            region AS provider, 
-            monthly_cost, 
-            status, 
-            created_at 
+        SELECT resource_id, resource_name, service_type, provider, monthly_cost, status, created_at 
         FROM resources 
         WHERE user_id = ? 
         ORDER BY created_at DESC
@@ -45,11 +31,11 @@ try {
     ]);
 } 
 catch (Exception $e) {
+
     http_response_code(500);
+
     echo json_encode([
-        "success" => false,
-        "error" => "Failed to fetch resources",
-        "details" => $e->getMessage()
+        "error" => "Failed to fetch resources"
     ]);
 }   
 ?>

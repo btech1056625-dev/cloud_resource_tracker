@@ -1,0 +1,420 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+    --bg-dark: #0a0e17;
+    --card-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-dark: #64748b;
+    --accent-blue: #3b82f6;
+    --accent-indigo: #6366f1;
+    --accent-purple: #a855f7;
+    --accent-pink: #ec4899;
+    --gradient-1: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    --gradient-2: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    --font-outfit: 'Outfit', sans-serif;
+    --font-inter: 'Inter', sans-serif;
+    --shadow-shimmer: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: var(--font-inter);
+    min-height: 100vh;
+    overflow-x: hidden;
+    color-scheme: dark; /* Forces dark theme for system UI like scrollbars and dropdowns */
+}
+
+h1, h2, h3, .brand {
+    font-family: var(--font-outfit);
+    font-weight: 700;
+}
+
+/* Glassmorphism Sidebar */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid var(--glass-border);
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.sidebar .brand {
+    font-size: 1.5rem;
+    margin-bottom: 3rem;
+    background: var(--gradient-1);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-links {
+    list-style: none;
+    flex-grow: 1;
+}
+
+.nav-item {
+    margin-bottom: 0.5rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.nav-link:hover, .nav-link.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.nav-link.active i {
+    color: var(--accent-blue);
+}
+
+/* Main Content Area */
+.main-content {
+    margin-left: 260px;
+    padding: 2rem 3rem;
+}
+
+/* Cards & Layout */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-shimmer);
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+    font-family: var(--font-outfit);
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-family: var(--font-inter);
+    transition: border-color 0.3s ease;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+select option {
+    background-color: #1e293b;
+    color: #f8fafc;
+    padding: 10px;
+}
+
+/* Ensure placeholder visibility */
+::placeholder {
+    color: rgba(148, 163, 184, 0.5);
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    font-family: var(--font-inter);
+}
+
+.btn-primary {
+    background: var(--gradient-1);
+    color: white;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-spinner {
+    display: inline-block;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Auth Error Messages */
+.auth-error {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.auth-error.visible {
+    max-height: 100px;
+    opacity: 1;
+}
+
+/* Tables */
+.table-container {
+    margin-top: 2rem;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card-bg);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+th {
+    text-align: left;
+    padding: 1rem 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+td {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-active { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.status-pending { background: rgba(234, 179, 8, 0.2); color: #fbbf24; }
+.status-terminated { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+/* Chart Container */
+.chart-container {
+    margin-top: 2rem;
+    height: 400px;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Mobile Devices (< 768px) */
+@media (max-width: 767px) {
+    body {
+        font-size: 14px;
+    }
+
+    .login-card {
+        max-width: 90%;
+        padding: 2rem 1.5rem;
+        margin: 1rem;
+    }
+
+    .hero-icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+    }
+
+    h1 {
+        font-size: 2rem !important;
+    }
+
+    .btn-large {
+        padding: 1rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        transition: left 0.3s ease;
+        z-index: 1001;
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 1rem;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .card {
+        padding: 1rem;
+    }
+
+    .table-container {
+        margin-top: 1rem;
+        font-size: 0.75rem;
+    }
+
+    th, td {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .nav-link {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .chart-container {
+        height: 300px;
+    }
+}
+
+/* Tablet Devices (768px - 1024px) */
+@media (max-width: 1024px) and (min-width: 768px) {
+    .login-card {
+        max-width: 500px;
+        padding: 3rem;
+    }
+
+    .main-content {
+        margin-left: 240px;
+        padding: 1.5rem 2rem;
+    }
+
+    .sidebar {
+        width: 240px;
+        padding: 1.5rem 1rem;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .chart-container {
+        height: 350px;
+    }
+}
+
+/* Large Screens (1025px+) */
+@media (min-width: 1025px) {
+    .main-content {
+        margin-left: 260px;
+        padding: 2rem 3rem;
+    }
+
+    .sidebar {
+        width: 260px;
+    }
+}
+
+/* Ultra-wide Screens (1440px+) */
+@media (min-width: 1440px) {
+    .login-card {
+        max-width: 500px;
+    }
+
+    .main-content {
+        padding: 2rem 4rem;
+    }
+}
+
+/* High DPI Screens (Retina Displays) */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .sidebar, .nav-link {
+        display: none;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    body {
+        background: white;
+        color: black;
+    }
+}

@@ -4,7 +4,7 @@ require 'auth.php';
 
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, DELETE, OPTIONS");
+header("Access-Control-Allow-Methods: DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 if (!isset($current_user_id)) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    echo json_encode(['error' => 'Unauthorized']);
     exit();
 }
 
@@ -22,7 +22,7 @@ $data = json_decode(file_get_contents("php://input"));
 
 if (!$data) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Invalid JSON input']);
+    echo json_encode(['error' => 'Invalid JSON input']);
     exit;
 }
 
@@ -33,7 +33,7 @@ if (!empty($data->resource_id)) {
         $pdo->beginTransaction();
 
         $fetchStmt = $pdo->prepare(
-            "SELECT instance_type, monthly_cost 
+            "SELECT resource_name, service_type, monthly_cost 
              FROM resources 
              WHERE resource_id = ? AND user_id = ?"
         );
@@ -53,7 +53,6 @@ if (!empty($data->resource_id)) {
 
         $delStmt->execute([$data->resource_id, $current_user_id]);
 
-        // Update cost summary using instance_type (the service group)
         $updateCost = $pdo->prepare(
             "UPDATE cost_summary
              SET total_cost = GREATEST(total_cost - ?, 0)
@@ -63,25 +62,35 @@ if (!empty($data->resource_id)) {
         $updateCost->execute([
             $resource['monthly_cost'],
             $current_user_id,
-            $resource['instance_type']
+            $resource['service_type']   // aligned to new column name
         ]);
 
         $pdo->commit();
 
         http_response_code(200);
+
         echo json_encode([
             'success' => true,
             'message' => 'Resource deleted and cost updated'
         ]);
 
     } catch (Exception $e) {
+
         $pdo->rollBack();
+
         http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'Unable to delete resource', 'details' => $e->getMessage()]);
+
+        echo json_encode([
+            'error' => 'Unable to delete resource'
+        ]);
     }
 
 } else {
+
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'resource_id is required']);
+
+    echo json_encode([
+        'error' => 'resource_id is required'
+    ]);
 }
 ?>

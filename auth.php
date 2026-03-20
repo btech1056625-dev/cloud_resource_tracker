@@ -17,13 +17,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 $region = 'ap-southeast-2';
-$userPoolId = 'ap-southeast-2_ZMufTlAjo';
+$userPoolId = 'ap-southeast-2_ZMufTlAjo'; 
 
-$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+$authHeader = '';
+if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+    $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+} elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+    $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+} elseif (function_exists('apache_request_headers')) {
+    $headers = apache_request_headers();
+    if (isset($headers['Authorization'])) {
+        $authHeader = $headers['Authorization'];
+    }
+}
 
 if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
     http_response_code(401);
-    echo json_encode(['error' => 'Unauthorized: No token provided']);
+    echo json_encode([
+        'error' => 'Unauthorized: No token provided',
+        'debug_server' => array_keys($_SERVER) // Helps debug if header is missing
+    ]);
     exit;
 }
 
@@ -34,6 +47,10 @@ try {
     $jwksUrl = "https://cognito-idp.$region.amazonaws.com/$userPoolId/.well-known/jwks.json";
     $jwksJson = file_get_contents($jwksUrl);
     $jwks = json_decode($jwksJson, true);
+
+    if (!$jwks) {
+        throw new Exception("Unable to fetch JWKS from Cognito");
+    }
 
     $parsedKeys = JWK::parseKeySet($jwks);
     $decoded = JWT::decode($jwt, $parsedKeys);
@@ -73,10 +90,9 @@ try {
 
     echo json_encode([
         "error" => "Unauthorized",
-        "message" => $e->getMessage()
+        "message" => $e->getMessage(),
+        "debug_token_prefix" => isset($jwt) ? substr($jwt, 0, 10) : 'none'
     ]);
 
     exit;
 }
-
-?>

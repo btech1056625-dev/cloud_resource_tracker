@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email | Cloud Resource Tracker</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50' font-size='90' text-anchor='middle' dominant-baseline='central'>☁️</text></svg>">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://d3sdmrdkgkaitg.cloudfront.net https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://d3sdmrdkgkaitg.cloudfront.net https://dkifvm4b8a1j4.cloudfront.net https://cdnjs.cloudflare.com; connect-src 'self' https://ap-southeast-2zmuftlajo.auth.ap-southeast-2.amazoncognito.com https://cloud-resource-tracker.duckdns.org https://cognito-idp.ap-southeast-2.amazonaws.com; img-src 'self' https://d19nijclqkl93.cloudfront.net data:; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; script-src-attr 'unsafe-hashes'; upgrade-insecure-requests;">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top left, #1e293b, #0a0e17);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .verify-card {
+            width: 100%;
+            max-width: 500px;
+            padding: 3rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .verify-icon {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card verify-card">
+        <div class="verify-icon">
+            <i class="fas fa-envelope"></i>
+        </div>
+        <h2 style="text-align: center; margin-bottom: 0.5rem;">Verify Your Email</h2>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
+            We've sent a verification code to your email. Enter it below to complete your registration.
+        </p>
+
+        <div id="verify-error" class="auth-error"></div>
+
+        <form id="verify-form">
+            <div class="form-group">
+                <label for="verify-code">Verification Code</label>
+                <input type="text" id="verify-code" name="code" placeholder="000000" maxlength="6" required>
+            </div>
+
+            <button type="submit" id="verify-btn" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                <span class="btn-text">Verify Email</span>
+                <span class="btn-spinner hidden">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </span>
+            </button>
+        </form>
+
+        <p style="text-align: center; margin-top: 2rem; font-size: 0.875rem; color: var(--text-secondary);">
+            Didn't receive a code?
+            <a href="#" id="resend-btn"
+                style="color: var(--accent-blue); text-decoration: none; font-weight: 600;">
+                Resend code
+            </a>
+        </p>
+
+        <p style="text-align: center; margin-top: 1rem; font-size: 0.875rem;">
+            <a href="index.html" style="color: var(--text-secondary); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Back to Sign In
+            </a>
+        </p>
+    </div>
+
+    <script src="js/auth.js?v=6.0"></script>
+</body>
+
+</html>
