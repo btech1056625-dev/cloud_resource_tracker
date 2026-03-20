@@ -1,3 +1,15 @@
 RewriteEngine On
+
+# Pass Authorization header to PHP
 RewriteCond %{HTTP:Authorization} ^(.*)
 RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
+# Route all requests to index.php for API routing
+# But exclude existing files and directories
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-l
+
+# If the request is not for a file or directory, route to index.php
+# This allows /signup, /confirm-signup, etc. to be routed properly
+RewriteRule ^(.*)$ index.php [QSA,L]
