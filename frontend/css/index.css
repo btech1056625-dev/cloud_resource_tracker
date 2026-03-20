@@ -196,6 +196,39 @@ select option {
     box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
 }
 
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-spinner {
+    display: inline-block;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Auth Error Messages */
+.auth-error {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.auth-error.visible {
+    max-height: 100px;
+    opacity: 1;
+}
+
 /* Tables */
 .table-container {
     margin-top: 2rem;

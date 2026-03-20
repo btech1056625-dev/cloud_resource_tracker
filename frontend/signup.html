@@ -49,6 +49,8 @@
         <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">Join CloudTracker to monitor
             your assets</p>
 
+        <div id="signup-error" class="auth-error"></div>
+
         <form onsubmit="event.preventDefault(); signup();">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div class="form-group">
@@ -66,13 +68,24 @@
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Min. 8 characters" required>
+                <div style="position: relative;">
+                    <input type="password" id="password" name="password" placeholder="Min. 8 characters" required>
+                    <button type="button" class="eye-btn" data-target="password" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 0; font-size: 1rem;">👁</button>
+                </div>
             </div>
             <div class="form-group">
                 <label for="confirmPassword">Confirm Password</label>
-                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="••••••••" required>
+                <div style="position: relative;">
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="••••••••" required>
+                    <button type="button" class="eye-btn" data-target="confirmPassword" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 0; font-size: 1rem;">👁</button>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Create Account</button>
+            <button type="submit" id="signup-btn" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                <span class="btn-text">Create Account</span>
+                <span class="btn-spinner hidden" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </span>
+            </button>
         </form>
 
         <p style="text-align: center; margin-top: 2rem; font-size: 0.875rem; color: var(--text-secondary);">
@@ -80,6 +93,7 @@
                 style="color: var(--accent-blue); text-decoration: none; font-weight: 600;">Sign In</a>
         </p>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/amazon-cognito-identity-js/6.2.2/amazon-cognito-identity.min.js"></script>
     <script src="js/auth.js"></script>
 </body>
 

@@ -81,14 +81,37 @@
             Professional multi-cloud resource monitoring and cost analysis platform.
         </p>
 
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <button id="loginBtn" class="btn btn-primary btn-large">
-                <i class="fas fa-sign-in-alt" style="margin-right: 0.5rem;"></i> Get Started
+        <div id="signin-error" class="auth-error"></div>
+
+        <form onsubmit="event.preventDefault(); login();">
+            <div class="form-group">
+                <label for="signin-email">Email Address</label>
+                <input type="email" id="signin-email" name="email" placeholder="your@email.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="signin-password">Password</label>
+                <div style="position: relative;">
+                    <input type="password" id="signin-password" name="password" placeholder="••••••••" required>
+                    <button type="button" class="eye-btn" data-target="signin-password" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 0; font-size: 1rem;">👁</button>
+                </div>
+            </div>
+
+            <button type="submit" id="signin-btn" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">
+                <span class="btn-text">Sign In</span>
+                <span class="btn-spinner hidden" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </span>
             </button>
-            <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 1rem;">
-                Powered by AWS Cognito Identity
-            </p>
-        </div>
+        </form>
+
+        <p style="text-align: center; margin-top: 2rem; font-size: 0.875rem; color: var(--text-secondary);">
+            Don't have an account? <a href="signup.html" style="color: var(--accent-blue); text-decoration: none; font-weight: 600;">Sign Up</a>
+        </p>
+
+        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 1rem;">
+            Powered by AWS Cognito Identity
+        </p>
 
         <div style="margin-top: 3rem; display: flex; justify-content: center; gap: 2rem; font-size: 0.75rem; color: var(--text-secondary);">
             <span><i class="fas fa-shield-alt"></i> Secure</span>
@@ -97,34 +120,10 @@
         </div>
     </div>
 
-    <script src="js/auth.js?v=3"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/amazon-cognito-identity-js/6.2.2/amazon-cognito-identity.min.js"></script>
+    <script src="js/auth.js?v=4.0"></script>
     <script src="js/api.js?v=3"></script>
     <script src="js/app.js?v=3"></script>
-    <script>
-        // Auto-invoke authentication handler when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            // Attach login button click handler to avoid inline onclick CSP violations
-            const loginBtn = document.getElementById('loginBtn');
-            if (loginBtn) {
-                loginBtn.addEventListener('click', function() {
-                    login();
-                });
-            }
-            
-            // Check if returning from Cognito with token in URL hash
-            if (window.location.hash) {
-                console.log("Cognito callback detected, processing authentication...");
-                handleAuth();
-            } else {
-                // If already logged in, redirect to dashboard
-                const token = localStorage.getItem("idToken");
-                if (token) {
-                    console.log("User already authenticated, redirecting to dashboard...");
-                    window.location.href = "/dashboard.html";
-                }
-            }
-        });
-    </script>
 </body>
 
 </html>
