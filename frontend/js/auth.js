@@ -1,68 +1,26 @@
-/* ═══════════════════════════════════════
-   CLOUD RESOURCE TRACKER — auth.js
-   AWS Cognito authentication logic
-   ═══════════════════════════════════════ */
+/**
+ * Cloud Resource Tracker Authentication Handler
+ * Uses minimal fetch-based Cognito auth (no SDK required)
+ */
 
 'use strict';
-console.log('%c🚀 CLOUD RESOURCE TRACKER AUTH V4.0: Loaded', 'color: #3b82f6; font-weight: bold;');
 
-// ── COGNITO CONFIG ───────────────────────────────────
-// From AWS Cognito User Pool console
-const COGNITO_USER_POOL_ID = 'ap-southeast-2_ZMufTlAjo';
-const COGNITO_CLIENT_ID = '6tkb0i2gbosk9j00f4ue3rq5ca';
+console.log('🚀 CLOUD RESOURCE TRACKER AUTH V5.0: Loaded');
 
-// ── COGNITO SETUP ────────────────────────────────────
-let userPool;
-
-// Initialize Cognito User Pool (SDK must load from script tag first)
-function initializeCognitoPool() {
-    if (typeof AmazonCognitoIdentity === 'undefined') {
-        console.warn('⚠️ AmazonCognitoIdentity SDK not available yet');
-        return false;
-    }
-
-    const poolData = {
-        UserPoolId: COGNITO_USER_POOL_ID,
-        ClientId: COGNITO_CLIENT_ID,
-    };
-    userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-    console.log('✅ Cognito User Pool initialized');
-    return true;
-}
-
-// Try to initialize immediately
-initializeCognitoPool();
-
-// Also try on DOMContentLoaded as fallback
-document.addEventListener('DOMContentLoaded', () => {
-    if (!userPool) {
-        initializeCognitoPool();
-    }
-});
-
-// Holds the pending-verification email
-let pendingEmail = '';
-
-// ── HELPERS ───────────────────────────────────────────
-/**
- * Show/hide loading state on button
- */
+// ── HELPER FUNCTIONS ──────────────────────────────
 function setLoading(btnId, loading) {
     const btn = document.getElementById(btnId);
     if (!btn) return;
-    
+
     const text = btn.querySelector('.btn-text');
     const spinner = btn.querySelector('.btn-spinner');
-    
+
     btn.disabled = loading;
-    
+
     if (text) text.classList.toggle('hidden', loading);
     if (spinner) spinner.classList.toggle('hidden', !loading);
 }
 
-/**
- * Display error message
- */
 function showError(elementId, msg) {
     const el = document.getElementById(elementId);
     if (el) {
@@ -71,9 +29,6 @@ function showError(elementId, msg) {
     }
 }
 
-/**
- * Clear all error messages
- */
 function clearErrors() {
     document.querySelectorAll('.auth-error').forEach(e => {
         e.textContent = '';
@@ -81,43 +36,9 @@ function clearErrors() {
     });
 }
 
-/**
- * Store authentication tokens in localStorage
- */
-function storeSession(idToken, userId) {
-    localStorage.setItem('idToken', idToken);
-    localStorage.setItem('userId', userId);
-    console.log('✅ Session stored successfully');
-}
-
-/**
- * Retrieve stored ID token
- */
-function getStoredToken() {
-    return localStorage.getItem('idToken');
-}
-
-/**
- * Check if user is authenticated
- */
-function isAuthenticated() {
-    return !!getStoredToken();
-}
-
-/**
- * Clear session data
- */
-function clearSession() {
-    localStorage.removeItem('idToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('tokenExpiry');
-    sessionStorage.removeItem('pendingEmail');
-}
-
-// ── PASSWORD SHOW/HIDE ────────────────────────────────
+// ── PASSWORD VISIBILITY TOGGLE ────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    // Password toggle buttons
+    // Password eye button
     document.querySelectorAll('.eye-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -130,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Sign In Form Handler
+    // Sign In
     const signinForm = document.getElementById('signin-form');
     if (signinForm) {
         signinForm.addEventListener('submit', (e) => {
@@ -139,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Sign Up Form Handler
+    // Sign Up
     const signupForm = document.getElementById('signup-form');
     if (signupForm) {
         signupForm.addEventListener('submit', (e) => {
@@ -148,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Verify Form Handler
+    // Verify
     const verifyForm = document.getElementById('verify-form');
     if (verifyForm) {
         verifyForm.addEventListener('submit', (e) => {
@@ -157,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Resend Code Button Handler
+    // Resend Code
     const resendBtn = document.getElementById('resend-btn');
     if (resendBtn) {
         resendBtn.addEventListener('click', (e) => {
@@ -165,76 +86,39 @@ document.addEventListener('DOMContentLoaded', () => {
             resendCode();
         });
     }
+
+    // Check existing session
+    checkExistingSession();
 });
 
-// ── SIGN IN (index.html) ───────────────────────────────
-function login() {
-    // Check if Cognito SDK is available
-    if (typeof AmazonCognitoIdentity === 'undefined') {
-        console.error('❌ Cognito SDK not loaded yet');
-        showError('signin-error', 'Authentication service not ready. Please refresh the page.');
-        setLoading('signin-btn', false);
+// ── LOGIN HANDLER ─────────────────────────────────
+async function login() {
+    clearErrors();
+    const email = document.getElementById('signin-email')?.value;
+    const password = document.getElementById('signin-password')?.value;
+
+    if (!email || !password) {
+        showError('signin-error', 'Email and password required');
         return;
     }
 
-    const email = document.getElementById('signin-email');
-    const password = document.getElementById('signin-password');
-    
-    if (!email || !password) {
-        console.warn('⚠️ Email or password input not found');
-        window.location.href = 'signup.html';
-        return;
-    }
-    
-    const emailVal = email.value.trim();
-    const passwordVal = password.value;
-    
-    if (!emailVal || !passwordVal) {
-        showError('signin-error', 'Please enter your email and password.');
-        return;
-    }
-    
-    clearErrors();
     setLoading('signin-btn', true);
-    
+
     try {
-        const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({
-            Username: emailVal,
-            Password: passwordVal,
-        });
-        
-        const cognitoUser = new AmazonCognitoIdentity.CognitoUser({
-            Username: emailVal,
-            Pool: userPool,
-        });
-        
-        cognitoUser.authenticateUser(authDetails, {
-            onSuccess(result) {
-                console.log('✅ Sign in successful');
-                const idToken = result.getIdToken().getJwtToken();
-                const payload = result.getIdToken().decodePayload();
-                storeSession(idToken, payload.sub);
-                localStorage.setItem('userEmail', payload.email || emailVal);
-                
-                // Brief delay to ensure storage is written before redirect
-                setTimeout(() => {
-                    window.location.replace('dashboard.html');
-                }, 100);
-            },
-            onFailure(err) {
-                setLoading('signin-btn', false);
-                console.error('❌ Sign in failed:', err.message);
-                showError('signin-error', err.message || 'Sign in failed. Please try again.');
-            },
-            newPasswordRequired() {
-                setLoading('signin-btn', false);
-                showError('signin-error', 'A new password is required. Please contact support.');
-            },
-        });
-    } catch (e) {
+        const result = await CognitoAuth.signIn(email, password);
+
+        if (result.success) {
+            console.log('✅ Login successful');
+            setTimeout(() => {
+                window.location.replace('dashboard.html');
+            }, 100);
+        } else {
+            showError('signin-error', result.error || 'Login failed');
+            setLoading('signin-btn', false);
+        }
+    } catch (err) {
+        showError('signin-error', err.message);
         setLoading('signin-btn', false);
-        console.error('❌ Error during sign in:', e);
-        showError('signin-error', 'An error occurred. Please try again.');
     }
 }
 
