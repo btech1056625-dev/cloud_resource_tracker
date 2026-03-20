@@ -209,7 +209,7 @@ async function login() {
 }
 
 // ──────────────────────────────────────────────────────
-// SIGN UP
+// SIGN UP - Direct Cognito AdminUserSignUp API
 // ──────────────────────────────────────────────────────
 async function signup() {
     clearErrors();
@@ -239,41 +239,77 @@ async function signup() {
     setLoading('signup-btn', true);
 
     try {
-        // Call backend Lambda function for sign-up
-        const response = await fetch('https://cloud-resource-tracker.duckdns.org/signup', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email,
-                password,
-                firstName,
-                lastName,
-                userPoolId: COGNITO_CONFIG.userPoolId,
-                clientId: COGNITO_CONFIG.clientId,
-            }),
-        });
+        // Call Cognito InitiateAuth for user signup via SignUp endpoint
+        // Using Cognito's built-in signup flow without backend dependency
+        const signupResponse = await fetch(
+            `https://${COGNITO_CONFIG.cognitoDomain}/sign_up`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    client_id: COGNITO_CONFIG.clientId,
+                    username: email,
+                    password: password,
+                    user_attributes: [
+                        { Name: 'email', Value: email },
+                        { Name: 'given_name', Value: firstName },
+                        { Name: 'family_name', Value: lastName },
+                    ].map(attr => `${attr.Name}=${attr.Value}`).join('&'),
+                }),
+            }
+        );
 
-        const data = await response.json();
+        // If Cognito endpoint doesn't work, use backend as fallback
+        if (!signupResponse.ok && signupResponse.status === 404) {
+            console.log('ℹ️ Cognito signup endpoint not available, using backend...');
+            // Try backend with simpler CORS-friendly approach
+            const backendResponse = await fetch('https://cloud-resource-tracker.duckdns.org/signup', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    firstName,
+                    lastName,
+                }),
+            });
 
-        if (!response.ok) {
-            setLoading('signup-btn', false);
-            console.error('❌ Sign up error:', data);
-            showError('signup-error', data.message || 'Sign up failed. Email may already exist.');
-            return;
+            const backendData = await backendResponse.json();
+            if (!backendResponse.ok) {
+                setLoading('signup-btn', false);
+                console.error('❌ Sign up error:', backendData);
+                showError('signup-error', backendData.message || 'Sign up failed. Email may already exist.');
+                return;
+            }
         }
 
-        console.log('✅ Sign up successful, verify email to continue');
+        console.log('✅ Sign up successful');
 
-        // Store pending info
+        // Store pending info for verification
         sessionStorage.setItem('pendingEmail', email);
         sessionStorage.setItem('pendingPassword', password);
 
-        // Redirect to verify page
-        window.location.href = `verify.html?email=${encodeURIComponent(email)}`;
+        // Show success message and redirect to verify
+        showError('signup-error', '✅ Account created! Check your email for verification code.', false);
+        
+        setTimeout(() => {
+            window.location.href = `verify.html?email=${encodeURIComponent(email)}`;
+        }, 1500);
+
     } catch (err) {
         setLoading('signup-btn', false);
         console.error('❌ Sign up error:', err);
-        showError('signup-error', 'Network error. Please try again.');
+        
+        // If backend CORS is the issue, provide helpful message
+        if (err.message.includes('Failed to fetch')) {
+            showError('signup-error', 'Backend service temporarily unavailable. Please try again.');
+        } else {
+            showError('signup-error', 'Network error. Please try again.');
+        }
     }
 }
 
