@@ -24,11 +24,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Handle Active Nav Link
-    const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+    const currentPageName = window.location.pathname.split('/').pop() || 'index.html';
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         const href = link.getAttribute('href');
-        if (href === currentPath || (currentPath === '' && href === 'dashboard.html')) {
+        if (href === currentPageName || (currentPageName === '' && href === 'dashboard.html')) {
             link.classList.add('active');
         } else {
             link.classList.remove('active');

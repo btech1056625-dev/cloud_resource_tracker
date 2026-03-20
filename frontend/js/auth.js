@@ -12,11 +12,27 @@ const COGNITO_USER_POOL_ID = 'ap-southeast-2_ZMufTlAjo';
 const COGNITO_CLIENT_ID = '6tkb0i2gbosk9j00f4ue3rq5ca';
 
 // ── COGNITO SETUP ────────────────────────────────────
-const poolData = {
-    UserPoolId: COGNITO_USER_POOL_ID,
-    ClientId: COGNITO_CLIENT_ID,
-};
-const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+let userPool;
+
+// Wait for Cognito SDK to be available
+if (typeof AmazonCognitoIdentity !== 'undefined') {
+    const poolData = {
+        UserPoolId: COGNITO_USER_POOL_ID,
+        ClientId: COGNITO_CLIENT_ID,
+    };
+    userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+} else {
+    // Fallback: initialize when SDK loads
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof AmazonCognitoIdentity !== 'undefined' && !userPool) {
+            const poolData = {
+                UserPoolId: COGNITO_USER_POOL_ID,
+                ClientId: COGNITO_CLIENT_ID,
+            };
+            userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+        }
+    });
+}
 
 // Holds the pending-verification email
 let pendingEmail = '';
