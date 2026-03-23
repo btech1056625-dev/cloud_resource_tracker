@@ -100,8 +100,7 @@ try {
         exit;
     }
 
-    // ===== Option 1: Use AWS SDK (if available) =====
-    /*
+    // ===== Use AWS SDK to resend confirmation code =====
     require '../vendor/autoload.php';
     use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
     use Aws\Exception\AwsException;
@@ -133,25 +132,6 @@ try {
         ]);
         exit;
     }
-    */
-
-    // ===== Option 2: Simplified response (for development) =====
-    // In production, use AWS SDK to trigger Cognito to resend email
-
-    // Log resend request
-    error_log("Resend verification code requested for: $email");
-
-    // In a real implementation, you would:
-    // 1. Generate new verification code
-    // 2. Send via email using AWS SES or similar
-    // 3. Store code in cache/database with expiry
-
-    http_response_code(200);
-    echo json_encode([
-        'success' => true,
-        'message' => 'Verification code has been resent to your email'
-    ]);
-    exit;
 
 } catch (\PDOException $e) {
     error_log("Database Error in resend-confirmation-code: " . $e->getMessage());

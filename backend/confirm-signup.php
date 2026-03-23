@@ -101,8 +101,7 @@ try {
         exit;
     }
 
-    // ===== Option 1: Use AWS SDK (if available) =====
-    /*
+    // ===== Use AWS SDK to confirm signup =====
     require '../vendor/autoload.php';
     use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
     use Aws\Exception\AwsException;
@@ -141,34 +140,6 @@ try {
         ]);
         exit;
     }
-    */
-
-    // ===== Option 2: Simplified verification (for development) =====
-    // In production, implement proper code validation and storage
-
-    // For now, accept any 6-digit code
-    // In real implementation, validate against sent code
-    if (!preg_match('/^\d{6}$/', $code) && $code !== '000000') {
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Invalid verification code format'
-        ]);
-        exit;
-    }
-
-    // Mark user as verified in database
-    $stmt = $pdo->prepare("
-        UPDATE users SET is_verified = 1, updated_at = NOW() WHERE email = ?
-    ");
-    $stmt->execute([$email]);
-
-    http_response_code(200);
-    echo json_encode([
-        'success' => true,
-        'message' => 'Email verified successfully'
-    ]);
-    exit;
 
 } catch (\PDOException $e) {
     error_log("Database Error in confirm-signup: " . $e->getMessage());

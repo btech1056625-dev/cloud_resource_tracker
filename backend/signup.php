@@ -114,21 +114,17 @@ try {
         exit;
     }
 
-    // ===== Option 1: Use AWS SDK (if available) =====
-    // This requires aws/aws-sdk-php to be installed
-    // Uncomment if AWS SDK is available
-
-    /*
+    // ===== Use AWS SDK to create Cognito user =====
     require '../vendor/autoload.php';
     use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
     use Aws\Exception\AwsException;
 
-    $cognitoClient = new CognitoIdentityProviderClient([
-        'version' => 'latest',
-        'region'  => $region
-    ]);
-
     try {
+        $cognitoClient = new CognitoIdentityProviderClient([
+            'version' => 'latest',
+            'region'  => $region
+        ]);
+
         $result = $cognitoClient->signUp([
             'ClientId' => $clientId,
             'Username' => $email,
@@ -140,18 +136,20 @@ try {
             ]
         ]);
 
-        // Store pending signup in database
+        $userSub = $result['UserSub'] ?? null;
+
+        // Store user in database with Cognito sub
         $stmt = $pdo->prepare("
             INSERT INTO users (email, cognito_sub, first_name, last_name, is_verified)
             VALUES (?, ?, ?, ?, 0)
         ");
-        $stmt->execute([$email, $result['UserSub'], $firstName, $lastName]);
+        $stmt->execute([$email, $userSub, $firstName, $lastName]);
 
         http_response_code(200);
         echo json_encode([
             'success' => true,
             'message' => 'Signup successful. Please check your email for verification code.',
-            'userSub' => $result['UserSub']
+            'userSub' => $userSub
         ]);
         exit;
 
@@ -164,45 +162,6 @@ try {
         ]);
         exit;
     }
-    */
-
-    // ===== Option 2: Direct API Call (fallback) =====
-    // For environments without AWS SDK installed
-
-    $cognitoEndpoint = "https://cognito-idp.{$region}.amazonaws.com/";
-    
-    // Create request signature (AWS Signature Version 4)
-    // For development, this requires proper AWS credentials configured
-    
-    // Store user as pending in database first
-    // This will be activated once email is verified
-    $stmt = $pdo->prepare("
-        INSERT INTO users (email, first_name, last_name, is_verified)
-        VALUES (?, ?, ?, 0)
-    ");
-    $stmt->execute([$email, $firstName, $lastName]);
-    $userId = $pdo->lastInsertId();
-
-    // Store password temporarily (in production, hash it)
-    // In real implementation, use PHP's password_hash()
-    $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-    $stmt = $pdo->prepare("
-        UPDATE users SET cognito_sub = ? WHERE user_id = ?
-    ");
-    $stmt->execute([$hashedPassword, $userId]);
-
-    // Log for manual Cognito signup if needed
-    error_log("User signup request: email=$email, userId=$userId");
-
-    // Return success - client will receive verification code from Cognito
-    http_response_code(200);
-    echo json_encode([
-        'success' => true,
-        'message' => 'Signup successful. Check your email for verification code.',
-        'userId' => $userId,
-        'email' => $email
-    ]);
-    exit;
 
 } catch (\PDOException $e) {
     error_log("Database Error in signup: " . $e->getMessage());

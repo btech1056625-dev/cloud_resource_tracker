@@ -18,6 +18,14 @@ const COGNITO_CONFIG = {
     cognitoDomain: 'ap-southeast-2zmuftlajo.auth.ap-southeast-2.amazoncognito.com',
 };
 
+// Backend API configuration
+const API_CONFIG = {
+    baseUrl: 'https://cloud-resource-tracker.duckdns.org',
+    signup: '/backend/signup.php',
+    confirmSignup: '/backend/confirm-signup.php',
+    resendCode: '/backend/resend-confirmation-code.php'
+};
+
 // ──────────────────────────────────────────────────────
 // HELPER FUNCTIONS
 // ──────────────────────────────────────────────────────
@@ -209,8 +217,8 @@ async function login() {
 }
 
 // ──────────────────────────────────────────────────────
-// SIGN UP - Direct Cognito Identity Provider API
-// Uses the public SignUp action (no SigV4 signing needed)
+// SIGN UP - Via Backend PHP Endpoint
+// Backend handles Cognito interaction with proper signing
 // ──────────────────────────────────────────────────────
 async function signup() {
     clearErrors();
@@ -240,25 +248,17 @@ async function signup() {
     setLoading('signup-btn', true);
 
     try {
-        // Use the Cognito Identity Provider API directly
-        // This is an unauthenticated public API - no AWS signing required
-        const cognitoIdpUrl = `https://cognito-idp.${COGNITO_CONFIG.region}.amazonaws.com/`;
-
-        const signupResponse = await fetch(cognitoIdpUrl, {
+        // Call backend endpoint which handles Cognito signup
+        const signupResponse = await fetch(API_CONFIG.baseUrl + API_CONFIG.signup, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-amz-json-1.1',
-                'X-Amz-Target': 'AWSCognitoIdentityProviderService.SignUp',
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                ClientId: COGNITO_CONFIG.clientId,
-                Username: email,
-                Password: password,
-                UserAttributes: [
-                    { Name: 'email', Value: email },
-                    { Name: 'given_name', Value: firstName },
-                    { Name: 'family_name', Value: lastName },
-                ],
+                email: email,
+                password: password,
+                firstName: firstName,
+                lastName: lastName,
             }),
         });
 
@@ -266,25 +266,12 @@ async function signup() {
 
         if (!signupResponse.ok) {
             setLoading('signup-btn', false);
-            console.error('❌ Cognito SignUp error:', data);
-
-            // Map Cognito error types to user-friendly messages
-            const errorType = data.__type || '';
-            let errorMsg = data.message || 'Sign up failed. Please try again.';
-
-            if (errorType.includes('UsernameExistsException')) {
-                errorMsg = 'An account with this email already exists.';
-            } else if (errorType.includes('InvalidPasswordException')) {
-                errorMsg = 'Password does not meet requirements. Use 8+ characters with uppercase, lowercase, numbers, and symbols.';
-            } else if (errorType.includes('InvalidParameterException')) {
-                errorMsg = data.message || 'Invalid input. Please check your details.';
-            }
-
-            showError('signup-error', errorMsg);
+            console.error('❌ SignUp error:', data);
+            showError('signup-error', data.message || 'Sign up failed. Please try again.');
             return;
         }
 
-        console.log('✅ Cognito SignUp successful:', data.UserSub);
+        console.log('✅ SignUp successful:', data.message);
 
         // Store pending info for verification
         sessionStorage.setItem('pendingEmail', email);
@@ -300,12 +287,7 @@ async function signup() {
     } catch (err) {
         setLoading('signup-btn', false);
         console.error('❌ Sign up error:', err);
-        
-        if (err.message.includes('Failed to fetch')) {
-            showError('signup-error', 'Could not reach authentication service. Please try again.');
-        } else {
-            showError('signup-error', 'Network error. Please try again.');
-        }
+        showError('signup-error', 'Could not reach server. Please try again.');
     }
 }
 
@@ -332,18 +314,15 @@ async function verifyCode() {
     setLoading('verify-btn', true);
 
     try {
-        // Call Cognito Identity Provider API directly for confirmation
-        const cognitoIdpUrl = `https://cognito-idp.${COGNITO_CONFIG.region}.amazonaws.com/`;
-        const response = await fetch(cognitoIdpUrl, {
+        // Call backend endpoint to confirm signup
+        const response = await fetch(API_CONFIG.baseUrl + API_CONFIG.confirmSignup, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-amz-json-1.1',
-                'X-Amz-Target': 'AWSCognitoIdentityProviderService.ConfirmSignUp',
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                ClientId: COGNITO_CONFIG.clientId,
-                Username: email,
-                ConfirmationCode: code,
+                email: email,
+                code: code,
             }),
         });
 
@@ -361,22 +340,12 @@ async function verifyCode() {
         // Auto sign-in after verification
         const password = sessionStorage.getItem('pendingPassword');
         if (password) {
-            // Sign in with verified email
-            const loginData = {
-                email,
-                password,
-            };
-
-            // Store credentials temporarily
-            sessionStorage.setItem('_login_email', email);
-            sessionStorage.setItem('_login_password', password);
-
             // Auto-trigger login
             setTimeout(() => {
                 autoLogin(email, password);
             }, 500);
         } else {
-            showError('verify-error', 'Email verified! Please sign in with your credentials.');
+            showError('verify-error', '✅ Email verified! Please sign in with your credentials.');
             setTimeout(() => {
                 window.location.href = 'index.html';
             }, 2000);
@@ -453,17 +422,14 @@ async function resendCode() {
     }
 
     try {
-        // Call Cognito Identity Provider API directly
-        const cognitoIdpUrl = `https://cognito-idp.${COGNITO_CONFIG.region}.amazonaws.com/`;
-        const response = await fetch(cognitoIdpUrl, {
+        // Call backend endpoint to resend code
+        const response = await fetch(API_CONFIG.baseUrl + API_CONFIG.resendCode, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-amz-json-1.1',
-                'X-Amz-Target': 'AWSCognitoIdentityProviderService.ResendConfirmationCode',
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                ClientId: COGNITO_CONFIG.clientId,
-                Username: email,
+                email: email,
             }),
         });
 
