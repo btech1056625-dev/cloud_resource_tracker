@@ -18,12 +18,19 @@ const COGNITO_CONFIG = {
     cognitoDomain: 'ap-southeast-2zmuftlajo.auth.ap-southeast-2.amazoncognito.com',
 };
 
-// Backend API configuration
+// Backend API configuration - handles both local and production
 const API_CONFIG = {
-    baseUrl: 'https://cloud-resource-tracker.duckdns.org',
+    baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? `http://${window.location.hostname}:8000`
+        : 'https://cloud-resource-tracker.duckdns.org',
     signup: '/backend/signup.php',
     confirmSignup: '/backend/confirm-signup.php',
-    resendCode: '/backend/resend-confirmation-code.php'
+    resendCode: '/backend/resend-confirmation-code.php',
+    
+    // Helper method to build full URL
+    getUrl(endpoint) {
+        return `${this.baseUrl}${endpoint}`;
+    }
 };
 
 // ──────────────────────────────────────────────────────
@@ -249,7 +256,7 @@ async function signup() {
 
     try {
         // Call backend endpoint which handles Cognito signup
-        const signupResponse = await fetch(API_CONFIG.baseUrl + API_CONFIG.signup, {
+        const signupResponse = await fetch(API_CONFIG.getUrl(API_CONFIG.signup), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -287,7 +294,10 @@ async function signup() {
     } catch (err) {
         setLoading('signup-btn', false);
         console.error('❌ Sign up error:', err);
-        showError('signup-error', 'Could not reach server. Please try again.');
+        const errMsg = err.message.includes('Failed to fetch') 
+            ? 'Network error - Backend server unreachable. Check your connection.'
+            : 'Could not reach server. Please try again.';
+        showError('signup-error', errMsg);
     }
 }
 
@@ -315,7 +325,7 @@ async function verifyCode() {
 
     try {
         // Call backend endpoint to confirm signup
-        const response = await fetch(API_CONFIG.baseUrl + API_CONFIG.confirmSignup, {
+        const response = await fetch(API_CONFIG.getUrl(API_CONFIG.confirmSignup), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -423,7 +433,7 @@ async function resendCode() {
 
     try {
         // Call backend endpoint to resend code
-        const response = await fetch(API_CONFIG.baseUrl + API_CONFIG.resendCode, {
+        const response = await fetch(API_CONFIG.getUrl(API_CONFIG.resendCode), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
