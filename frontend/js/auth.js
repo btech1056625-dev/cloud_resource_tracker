@@ -1,22 +1,42 @@
 /**
- * Cloud Resource Tracker Authentication Handler (v6.0)
+ * Cloud Resource Tracker Authentication Handler (v6.2)
  * Direct Cognito API calls via fetch - NO external SDK dependency
- * Eliminates "SDK failed to load" timeout issues completely
+ * Uses centralized configuration from config.js
  */
 
 'use strict';
 
-console.log('🚀 CLOUD RESOURCE TRACKER AUTH V6.0: Loaded');
+console.log('🚀 CLOUD RESOURCE TRACKER AUTH V6.2: Loaded');
 
 // ──────────────────────────────────────────────────────
-// CONFIG - COGNITO CREDENTIALS (UPDATED)
+// CONFIG - USE CENTRALIZED CONFIG FROM config.js
 // ──────────────────────────────────────────────────────
-const COGNITO_CONFIG = {
-    userPoolId: 'ap-southeast-2_ZMufTlAjo',
-    clientId: '6tkb0i2gbosk9j00f4ue3rq5ca',
-    region: 'ap-southeast-2',
-    cognitoDomain: 'ap-southeast-2zmuftlajo.auth.ap-southeast-2.amazoncognito.com',
-};
+// Note: config.js must be loaded BEFORE auth.js in HTML
+// If config.js is not loaded, fallback to inline config
+
+if (typeof COGNITO_CONFIG === 'undefined') {
+    COGNITO_CONFIG = {
+        userPoolId: 'ap-southeast-2_ZMufTlAjo',
+        clientId: '6tkb0i2gbosk9j00f4ue3rq5ca',
+        region: 'ap-southeast-2',
+        cognitoDomain: 'ap-southeast-2zmuftlajo.auth.ap-southeast-2.amazoncognito.com',
+    };
+}
+
+if (typeof API_CONFIG === 'undefined') {
+    API_CONFIG = {
+        baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? `http://${window.location.hostname}:8000`
+            : 'https://cloud-resource-tracker.duckdns.org',
+    };
+}
+
+// Ensure all required API_CONFIG methods exist
+if (!API_CONFIG.getUrl) {
+    API_CONFIG.getUrl = function(endpoint) {
+        return `${this.baseUrl}${endpoint}`;
+    };
+}
 
 // ──────────────────────────────────────────────────────
 // HELPER FUNCTIONS
@@ -209,7 +229,8 @@ async function login() {
 }
 
 // ──────────────────────────────────────────────────────
-// SIGN UP - Direct Cognito AdminUserSignUp API
+// SIGN UP - Via Backend PHP Endpoint
+// Backend handles Cognito interaction with proper signing
 // ──────────────────────────────────────────────────────
 async function signup() {
     clearErrors();
@@ -239,62 +260,37 @@ async function signup() {
     setLoading('signup-btn', true);
 
     try {
-        // Call Cognito InitiateAuth for user signup via SignUp endpoint
-        // Using Cognito's built-in signup flow without backend dependency
-        const signupResponse = await fetch(
-            `https://${COGNITO_CONFIG.cognitoDomain}/sign_up`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    client_id: COGNITO_CONFIG.clientId,
-                    username: email,
-                    password: password,
-                    user_attributes: [
-                        { Name: 'email', Value: email },
-                        { Name: 'given_name', Value: firstName },
-                        { Name: 'family_name', Value: lastName },
-                    ].map(attr => `${attr.Name}=${attr.Value}`).join('&'),
-                }),
-            }
-        );
+        // Call backend endpoint which handles Cognito signup
+        const signupResponse = await fetch(API_CONFIG.getUrl(API_CONFIG.signup), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email,
+                password: password,
+                firstName: firstName,
+                lastName: lastName,
+            }),
+        });
 
-        // If Cognito endpoint doesn't work, use backend as fallback
-        if (!signupResponse.ok && signupResponse.status === 404) {
-            console.log('ℹ️ Cognito signup endpoint not available, using backend...');
-            // Try backend with simpler CORS-friendly approach
-            const backendResponse = await fetch('https://cloud-resource-tracker.duckdns.org/signup', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                    firstName,
-                    lastName,
-                }),
-            });
+        const data = await signupResponse.json();
 
-            const backendData = await backendResponse.json();
-            if (!backendResponse.ok) {
-                setLoading('signup-btn', false);
-                console.error('❌ Sign up error:', backendData);
-                showError('signup-error', backendData.message || 'Sign up failed. Email may already exist.');
-                return;
-            }
+        if (!signupResponse.ok) {
+            setLoading('signup-btn', false);
+            console.error('❌ SignUp error:', data);
+            showError('signup-error', data.message || 'Sign up failed. Please try again.');
+            return;
         }
 
-        console.log('✅ Sign up successful');
+        console.log('✅ SignUp successful:', data.message);
 
         // Store pending info for verification
         sessionStorage.setItem('pendingEmail', email);
         sessionStorage.setItem('pendingPassword', password);
 
         // Show success message and redirect to verify
-        showError('signup-error', '✅ Account created! Check your email for verification code.', false);
+        showError('signup-error', '✅ Account created! Check your email for verification code.');
         
         setTimeout(() => {
             window.location.href = `verify.html?email=${encodeURIComponent(email)}`;
@@ -303,13 +299,10 @@ async function signup() {
     } catch (err) {
         setLoading('signup-btn', false);
         console.error('❌ Sign up error:', err);
-        
-        // If backend CORS is the issue, provide helpful message
-        if (err.message.includes('Failed to fetch')) {
-            showError('signup-error', 'Backend service temporarily unavailable. Please try again.');
-        } else {
-            showError('signup-error', 'Network error. Please try again.');
-        }
+        const errMsg = err.message.includes('Failed to fetch') 
+            ? 'Network error - Backend server unreachable. Check your connection.'
+            : 'Could not reach server. Please try again.';
+        showError('signup-error', errMsg);
     }
 }
 
@@ -336,15 +329,15 @@ async function verifyCode() {
     setLoading('verify-btn', true);
 
     try {
-        // Call backend Lambda function for confirmation
-        const response = await fetch('https://cloud-resource-tracker.duckdns.org/confirm-signup', {
+        // Call backend endpoint to confirm signup
+        const response = await fetch(API_CONFIG.getUrl(API_CONFIG.confirmSignup), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
-                email,
-                code,
-                userPoolId: COGNITO_CONFIG.userPoolId,
-                clientId: COGNITO_CONFIG.clientId,
+                email: email,
+                code: code,
             }),
         });
 
@@ -362,22 +355,12 @@ async function verifyCode() {
         // Auto sign-in after verification
         const password = sessionStorage.getItem('pendingPassword');
         if (password) {
-            // Sign in with verified email
-            const loginData = {
-                email,
-                password,
-            };
-
-            // Store credentials temporarily
-            sessionStorage.setItem('_login_email', email);
-            sessionStorage.setItem('_login_password', password);
-
             // Auto-trigger login
             setTimeout(() => {
                 autoLogin(email, password);
             }, 500);
         } else {
-            showError('verify-error', 'Email verified! Please sign in with your credentials.');
+            showError('verify-error', '✅ Email verified! Please sign in with your credentials.');
             setTimeout(() => {
                 window.location.href = 'index.html';
             }, 2000);
@@ -454,13 +437,14 @@ async function resendCode() {
     }
 
     try {
-        const response = await fetch('https://cloud-resource-tracker.duckdns.org/resend-confirmation-code', {
+        // Call backend endpoint to resend code
+        const response = await fetch(API_CONFIG.getUrl(API_CONFIG.resendCode), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
-                email,
-                userPoolId: COGNITO_CONFIG.userPoolId,
-                clientId: COGNITO_CONFIG.clientId,
+                email: email,
             }),
         });
 

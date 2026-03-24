@@ -1,5 +1,16 @@
-// Base URL of your backend (EC2 or local server)
-const API_BASE_URL = "https://cloud-resource-tracker.duckdns.org/cloud_resource_tracker/";
+/**
+ * Cloud Resource Tracker - API Client Module
+ * Uses centralized configuration from config.js
+ * Handles authentication, CORS, and API calls to backend
+ */
+
+// Base URL of your backend - uses centralized config
+// If config.js is not loaded, fallback to production URL
+const API_BASE_URL = (typeof API_CONFIG !== 'undefined' && API_CONFIG.baseUrl) 
+    ? API_CONFIG.baseUrl 
+    : 'https://cloud-resource-tracker.duckdns.org';
+
+console.log('📡 API Module initialized with base URL:', API_BASE_URL);
 
 // ===== UTILITY FUNCTIONS =====
 
