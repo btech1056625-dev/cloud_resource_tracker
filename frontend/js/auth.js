@@ -27,7 +27,7 @@ if (typeof API_CONFIG === 'undefined') {
     API_CONFIG = {
         baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? `http://${window.location.hostname}:8000`
-            : 'https://cloud-resource-tracker.duckdns.org',
+            : 'https://cloud-resource-tracker.duckdns.org/cloud_resource_tracker/backend',
     };
 }
 
