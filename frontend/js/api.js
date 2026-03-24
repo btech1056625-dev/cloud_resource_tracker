@@ -15,6 +15,21 @@ console.log('📡 API Module initialized with base URL:', API_BASE_URL);
 // ===== UTILITY FUNCTIONS =====
 
 /**
+ * Get the correct API endpoint URL based on current environment
+ * Handles the '/backend' path or root-level endpoints
+ */
+function getApiEndpoint(endpoint) {
+    // If endpoint already has protocol, use it as-is
+    if (endpoint.startsWith('http')) {
+        return endpoint;
+    }
+    
+    // Always add a / before the endpoint if API_BASE_URL doesn't end with one
+    const separator = API_BASE_URL.endsWith('/') ? '' : '/';
+    return `${API_BASE_URL}${separator}${endpoint}`;
+}
+
+/**
  * Check if stored token is expired
  */
 function isTokenExpired() {
@@ -79,7 +94,7 @@ async function getResources() {
         const token = getValidTokenForApi();
         if (!token) return { success: false, data: [], message: "Authentication required" };
 
-        const response = await fetch(`${API_BASE_URL}get_resource.php`, {
+        const response = await fetch(getApiEndpoint('get_resource.php'), {
             headers: {
                 "Authorization": `Bearer ${token}`,
                 "Accept": "application/json"
@@ -116,7 +131,7 @@ async function addResource(resourceData) {
         const token = getValidTokenForApi();
         if (!token) return { success: false, message: "Authentication required" };
         
-        const response = await fetch(`${API_BASE_URL}add_resource.php`, {
+        const response = await fetch(getApiEndpoint('add_resource.php'), {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -142,7 +157,7 @@ async function getCostByService() {
         const token = getValidTokenForApi();
         if (!token) return { success: false, data: [], message: "Authentication required" };
         
-        const response = await fetch(`${API_BASE_URL}get_cost_by_service.php`, {
+        const response = await fetch(getApiEndpoint('get_cost_by_service.php'), {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -166,7 +181,7 @@ async function getStatusSummary() {
         const token = getValidTokenForApi();
         if (!token) return { success: false, message: "Authentication required" };
         
-        const response = await fetch(`${API_BASE_URL}get_summary_status.php`, {
+        const response = await fetch(getApiEndpoint('get_summary_status.php'), {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -195,7 +210,7 @@ async function deleteResource(resourceId) {
         const token = getValidTokenForApi();
         if (!token) return { success: false, message: "Authentication required" };
         
-        const response = await fetch(`${API_BASE_URL}delete_resource.php`, {
+        const response = await fetch(getApiEndpoint('delete_resource.php'), {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
