@@ -1,37 +1,42 @@
 /**
- * Cloud Resource Tracker Authentication Handler (v6.1)
+ * Cloud Resource Tracker Authentication Handler (v6.2)
  * Direct Cognito API calls via fetch - NO external SDK dependency
- * Eliminates "SDK failed to load" timeout issues completely
+ * Uses centralized configuration from config.js
  */
 
 'use strict';
 
-console.log('🚀 CLOUD RESOURCE TRACKER AUTH V6.0: Loaded');
+console.log('🚀 CLOUD RESOURCE TRACKER AUTH V6.2: Loaded');
 
 // ──────────────────────────────────────────────────────
-// CONFIG - COGNITO CREDENTIALS (UPDATED)
+// CONFIG - USE CENTRALIZED CONFIG FROM config.js
 // ──────────────────────────────────────────────────────
-const COGNITO_CONFIG = {
-    userPoolId: 'ap-southeast-2_ZMufTlAjo',
-    clientId: '6tkb0i2gbosk9j00f4ue3rq5ca',
-    region: 'ap-southeast-2',
-    cognitoDomain: 'ap-southeast-2zmuftlajo.auth.ap-southeast-2.amazoncognito.com',
-};
+// Note: config.js must be loaded BEFORE auth.js in HTML
+// If config.js is not loaded, fallback to inline config
 
-// Backend API configuration - handles both local and production
-const API_CONFIG = {
-    baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? `http://${window.location.hostname}:8000`
-        : 'https://cloud-resource-tracker.duckdns.org',
-    signup: '/backend/signup.php',
-    confirmSignup: '/backend/confirm-signup.php',
-    resendCode: '/backend/resend-confirmation-code.php',
-    
-    // Helper method to build full URL
-    getUrl(endpoint) {
+if (typeof COGNITO_CONFIG === 'undefined') {
+    COGNITO_CONFIG = {
+        userPoolId: 'ap-southeast-2_ZMufTlAjo',
+        clientId: '6tkb0i2gbosk9j00f4ue3rq5ca',
+        region: 'ap-southeast-2',
+        cognitoDomain: 'ap-southeast-2zmuftlajo.auth.ap-southeast-2.amazoncognito.com',
+    };
+}
+
+if (typeof API_CONFIG === 'undefined') {
+    API_CONFIG = {
+        baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? `http://${window.location.hostname}:8000`
+            : 'https://cloud-resource-tracker.duckdns.org',
+    };
+}
+
+// Ensure all required API_CONFIG methods exist
+if (!API_CONFIG.getUrl) {
+    API_CONFIG.getUrl = function(endpoint) {
         return `${this.baseUrl}${endpoint}`;
-    }
-};
+    };
+}
 
 // ──────────────────────────────────────────────────────
 // HELPER FUNCTIONS

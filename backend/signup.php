@@ -1,16 +1,13 @@
 <?php
 
+use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
+use Aws\Exception\AwsException;
+
+require_once 'Config.php';
 require_once 'db.php';
 
 // ===== CORS Configuration =====
-$allowed_origins = [
-    'http://localhost',
-    'http://localhost:5501',
-    'http://127.0.0.1:5501',
-    'https://frontend.d1v2anpquopal6.amplifyapp.com',
-    'https://cloud-resource-tracker.duckdns.org',
-    'https://cloud-resource-tracker.amplifyapp.com'
-];
+$allowed_origins = Config::getCorsOrigins();
 
 // Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -45,9 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // ===== Cognito Configuration =====
-$region = 'ap-southeast-2';
-$userPoolId = 'ap-southeast-2_ZMufTlAjo';
-$clientId = '6tkb0i2gbosk9j00f4ue3rq5ca';
+$cognitoConfig = Config::getCognitoConfig();
+$region = $cognitoConfig['region'];
+$userPoolId = $cognitoConfig['userPoolId'];
+$clientId = $cognitoConfig['clientId'];
 
 // AWS SDK initialization - requires aws/aws-sdk-php
 // Using environment variables or assume IAM role
@@ -115,9 +113,7 @@ try {
     }
 
     // ===== Use AWS SDK to create Cognito user =====
-    require '../vendor/autoload.php';
-    use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
-    use Aws\Exception\AwsException;
+    require_once '../vendor/autoload.php';
 
     try {
         $cognitoClient = new CognitoIdentityProviderClient([

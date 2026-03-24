@@ -1,0 +1,42 @@
+# Environment configuration
+.env
+.env.local
+.env.*.local
+
+# Operating System
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# PHP
+vendor/
+composer.lock
+*.log
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build artifacts
+dist/
+build/
+*.min.js
+*.min.css
+
+# Temp files
+*.tmp
+*.temp
+.tmp/
+
+# OS specific
+.Spotlight-V100
+.Trashes

@@ -26,71 +26,67 @@ if (!$data) {
     exit;
 }
 
-if (!empty($data->resource_id)) {
+if (empty($data->resource_id)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'resource_id is required']);
+    exit;
+}
 
-    try {
+try {
+    $pdo->beginTransaction();
 
-        $pdo->beginTransaction();
+    $fetchStmt = $pdo->prepare(
+        "SELECT resource_name, service_type, monthly_cost 
+         FROM resources 
+         WHERE resource_id = ? AND user_id = ?"
+    );
 
-        $fetchStmt = $pdo->prepare(
-            "SELECT resource_name, service_type, monthly_cost 
-             FROM resources 
-             WHERE resource_id = ? AND user_id = ?"
-        );
+    $fetchStmt->execute([$data->resource_id, $current_user_id]);
+    $resource = $fetchStmt->fetch();
 
-        $fetchStmt->execute([$data->resource_id, $current_user_id]);
-        $resource = $fetchStmt->fetch();
-
-        if (!$resource) {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'error' => 'Resource not found']);
-            exit;
-        }
-
-        $delStmt = $pdo->prepare(
-            "DELETE FROM resources WHERE resource_id = ? AND user_id = ?"
-        );
-
-        $delStmt->execute([$data->resource_id, $current_user_id]);
-
-        $updateCost = $pdo->prepare(
-            "UPDATE cost_summary
-             SET total_cost = GREATEST(total_cost - ?, 0)
-             WHERE user_id = ? AND service_name = ?"
-        );
-
-        $updateCost->execute([
-            $resource['monthly_cost'],
-            $current_user_id,
-            $resource['service_type']   // aligned to new column name
-        ]);
-
-        $pdo->commit();
-
-        http_response_code(200);
-
-        echo json_encode([
-            'success' => true,
-            'message' => 'Resource deleted and cost updated'
-        ]);
-
-    } catch (Exception $e) {
-
+    if (!$resource) {
         $pdo->rollBack();
-
-        http_response_code(500);
-
-        echo json_encode([
-            'error' => 'Unable to delete resource'
-        ]);
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'Resource not found']);
+        exit;
     }
 
-} else {
+    $delStmt = $pdo->prepare(
+        "DELETE FROM resources WHERE resource_id = ? AND user_id = ?"
+    );
 
-    http_response_code(400);
+    $delStmt->execute([$data->resource_id, $current_user_id]);
 
+    $updateCost = $pdo->prepare(
+        "UPDATE cost_summary
+         SET total_cost = GREATEST(total_cost - ?, 0)
+         WHERE user_id = ? AND service_name = ?"
+    );
+
+    $updateCost->execute([
+        $resource['monthly_cost'],
+        $current_user_id,
+        $resource['service_type']
+    ]);
+
+    $pdo->commit();
+
+    http_response_code(200);
     echo json_encode([
-        'error' => 'resource_id is required'
+        'success' => true,
+        'message' => 'Resource deleted and cost updated'
+    ]);
+
+} catch (Exception $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log("Error deleting resource: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Unable to delete resource',
+        'details' => $e->getMessage()
     ]);
 }
 ?>

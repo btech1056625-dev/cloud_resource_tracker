@@ -1,13 +1,22 @@
 <?php
 
-$host = 'database-2.cba0moeueydx.ap-southeast-2.rds.amazonaws.com';
-$db   = 'cloud_resource_tracker'; // Updated DB name
-$user = 'admin'; 
-$pass = 'Bhavya12345';     //password
-$charset = 'utf8mb4';
+/**
+ * Cloud Resource Tracker - Database Connection
+ * Uses centralized configuration from Config.php
+ */
+
+require_once __DIR__ . '/Config.php';
+
+// Get database credentials from configuration
+$config = Config::getDbConfig();
+$host = $config['host'];
+$db   = $config['name'];
+$user = $config['user'];
+$pass = $config['password'];
+$charset = $config['charset'];
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
-$options =[
+$options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES   => false,
@@ -15,7 +24,9 @@ $options =[
 
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
+    error_log("✅ Database connection established");
 } catch (\PDOException $e) {
+    error_log("❌ Database connection failed: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Database connection failed']);
     exit;

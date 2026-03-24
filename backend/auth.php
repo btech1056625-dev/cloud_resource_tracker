@@ -1,26 +1,21 @@
 <?php
 
 require 'vendor/autoload.php';
+require_once 'Config.php';
 require_once 'db.php';
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\JWK;
 
 // ===== CORS Configuration =====
-// Determine allowed origin based on environment
-$allowed_origins = [
-    'http://localhost',
-    'http://localhost:5501',
-    'http://127.0.0.1:5501',
-    'https://cloud-resource-tracker.duckdns.org',
-    'https://cloud-resource-tracker.amplifyapp.com'
-];
+// Load allowed origins from configuration
+$allowed_origins = Config::getCorsOrigins();
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowed_origins)) {
     header("Access-Control-Allow-Origin: $origin");
 } else if (!empty($origin)) {
-    error_log("Unauthorized CORS origin attempted: $origin");
+    error_log("⚠️ Unauthorized CORS origin attempted: $origin");
 }
 
 header("Content-Type: application/json; charset=UTF-8");
@@ -35,8 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // ===== Cognito Configuration =====
-$region = 'ap-southeast-2';
-$userPoolId = 'ap-southeast-2_ZMufTlAjo';
+$cognitoConfig = Config::getCognitoConfig();
+$region = $cognitoConfig['region'];
+$userPoolId = $cognitoConfig['userPoolId'];
+$jwtTimeout = $cognitoConfig['timeout'];
 
 // Extract and validate authorization header
 $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
@@ -69,7 +66,7 @@ try {
     
     $context = stream_context_create([
         'http' => [
-            'timeout' => 5,
+            'timeout' => $jwtTimeout,
             'method' => 'GET'
         ],
         'ssl' => [
